@@ -1,0 +1,81 @@
+name: Build & Push to Internal Harbor
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/**'
+      - 'libs/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: environment
+        description: Select the environment
+        required: true
+        default: dev
+      server:
+        type: choice
+        description: Select the server
+        required: true
+        default: identity
+        options:
+          - identity
+
+jobs:
+  build-and-push:
+    name: Build Docker image & push to internal Harbor
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract short SHA
+        id: vars
+        run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
+      - name: Set repo name
+        run: echo "REPO_NAME=${GITHUB_REPOSITORY##*/}" >> $GITHUB_ENV
+
+      - name: Set deploy environment
+        id: set-env
+        run: |
+          if [ -z "${{ github.event.inputs.environment }}" ]; then
+            echo "DEPLOY_ENV=dev" >> $GITHUB_ENV
+          else
+            echo "DEPLOY_ENV=${{ github.event.inputs.environment }}" >> $GITHUB_ENV
+          fi
+
+      - name: Build Docker image
+        run: |
+          docker build --platform linux/amd64 --build-arg APP_NAME=${{ github.event.inputs.server }} --progress=plain -t infra-harbor.test.com/app/server:${{ steps.vars.outputs.SHORT_SHA }} -t infra-harbor.test.com/app/server:latest .
+
+      - name: Login to Harbor
+        env:
+          HARBOR_USER: ${{ secrets.HARBOR_USER }}
+          HARBOR_PASSWORD: ${{ secrets.HARBOR_PASSWORD }}
+        run: |
+          echo "${HARBOR_PASSWORD}" | docker login infra-harbor.test.com --username "${HARBOR_USER}" --password-stdin
+
+      - name: Push Docker image
+        run: |
+          docker push infra-harbor.test.com/app/server:${{ steps.vars.outputs.SHORT_SHA }}
+          docker push infra-harbor.test.com/app/server:latest
+
+      - name: Trigger infra repo deploy workflow
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: 'deploy.yml'
+          repo: 'bbbbb0413/infra'
+          ref: 'main'
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          inputs: '{"image-tag": "${{ steps.vars.outputs.SHORT_SHA }}", "environment": "${{ env.DEPLOY_ENV }}", "project": "${{ env.REPO_NAME }}"}'
+
+

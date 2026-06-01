@@ -1,0 +1,39 @@
+authtoken: ${NGROK_AUTHTOKEN}  # Ngrok 인증 토큰 (ngrok 로그인 후 발급 — https://dashboard.ngrok.com)
+version: "2"  # 설정 파일 버전 (기본적으로 2 사용)
+region: jp
+
+# 무료 계정은 최대 3개 세션밖에 못염
+tunnels:
+  server1:
+    addr: host.docker.internal:8089
+    proto: http  # HTTP 프로토콜 사용
+#    subdomain: my-test-app
+    inspect: true
+#  server2:
+#    addr: host.docker.internal:8100
+#    proto: http  # HTTP 프로토콜 사용
+#    #    subdomain: my-test-app
+#    inspect: true
+#  server3:
+#    addr: host.docker.internal:8101
+#    proto: http  # HTTP 프로토콜 사용
+#    #    subdomain: my-test-app
+#    inspect: true
+  socket1:
+    addr: host.docker.internal:4000
+    proto: http  # HTTP 프로토콜 사용
+    #    subdomain: my-test-app
+    inspect: true
+#  socket2:
+#    addr: host.docker.internal:4001
+#    proto: http  # HTTP 프로토콜 사용
+#    #    subdomain: my-test-app
+#    inspect: true
+#  socket3:
+#    addr: host.docker.internal:4002
+#    proto: http  # HTTP 프로토콜 사용
+#    #    subdomain: my-test-app
+#    inspect: true
+
+log: /dev/stdout  # 로그를 stdout으로 출력
+log_level: info

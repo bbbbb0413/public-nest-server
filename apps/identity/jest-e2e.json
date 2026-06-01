@@ -1,0 +1,16 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": "../../",
+  "setupFiles": ["<rootDir>/test-support/jest-setup.js"],
+  "testMatch": ["<rootDir>/apps/identity/test/**/*.e2e-spec.ts"],
+  "transform": {
+    "^.+\\.ts$": "ts-jest"
+  },
+  "testEnvironment": "node",
+  "moduleNameMapper": {
+    "^@libs/common(|/.*)$": "<rootDir>/libs/common/src/$1",
+    "^@libs/dao(|/.*)$": "<rootDir>/libs/dao/src/$1",
+    "^@libs/auth(|/.*)$": "<rootDir>/libs/auth/src/$1",
+    "^@extension/(.*)$": "<rootDir>/libs/common/src/extension/$1"
+  }
+}

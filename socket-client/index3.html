@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebSocket Chat</title>
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+<h1>Chat Room</h1>
+
+<!-- JWT 입력 -->
+<input type="text" id="jwtToken" placeholder="Enter your JWT token">
+<br><br>
+
+<!-- Socket Port 입력 -->
+<input type="text" id="socketPort" placeholder="Enter Socket Server Port" value="4000">
+<button onclick="connectSocket()">Connect</button>
+<br><br>
+
+<!-- 닉네임 설정 -->
+<input type="text" id="nickname" placeholder="Enter your nickname">
+<button onclick="setNickname()">Set Nickname</button>
+<br><br>
+
+<!-- 방 입장 / 퇴장 -->
+<input type="text" id="room" placeholder="Enter room name">
+<button onclick="joinRoom()">Join Room</button>
+<button onclick="exitRoom()">Exit Room</button>
+<br><br>
+
+<!-- 메시지 입력 -->
+<input type="text" id="message" placeholder="Type a message">
+<button onclick="sendMessage()">Send</button>
+<br><br>
+
+<!-- 채팅 메시지 출력 -->
+<h2>Chat</h2>
+<div id="chat" style="border: 1px solid #000; padding: 10px; width: 300px; height: 200px; overflow-y: auto;"></div>
+
+<!-- 현재 입장한 방의 유저 리스트 -->
+<h2>Users in Room</h2>
+<ul id="userList" style="border: 1px solid #000; padding: 10px; width: 200px;"></ul>
+
+<script>
+  let socket;  // socket 객체를 전역으로 선언
+
+  // Connect 버튼 클릭 시 호출되는 함수
+  function connectSocket() {
+    const token = document.getElementById('jwtToken').value;  // 입력된 JWT 토큰을 가져옴
+    const port = document.getElementById('socketPort').value;  // 입력된 포트 번호를 가져옴
+
+    if (!token) {
+      return alert('토큰을 입력해주세요!');
+    }
+    if (!port) {
+      return alert('포트 번호를 입력해주세요!');
+    }
+
+    // 서버의 주소는 localhost로, 포트는 사용자가 입력한 값으로 설정
+    const serverUrl = `http://localhost:${port}`;
+
+    socket = io(serverUrl, {
+      transports: ['websocket'],
+      auth: { token }  // 입력받은 토큰을 auth에 전달
+    });
+
+    // 인증 오류 메시지를 클라이언트로 받기
+    socket.on('connect_error', (err) => {
+      const errorData = JSON.parse(err.message);
+      if (errorData.code === 401) {
+        // 인증 오류가 발생한 경우
+        console.error('Authentication Error:', errorData.message);
+        alert(`Authentication Error: ${errorData.message} \nDetails: ${errorData.details}`);
+      } else {
+        // 인증 이외의 연결 오류가 발생한 경우
+        alert(`Connection Error: ${errorData.message} \nDetails: ${errorData.details}`);
+      }
+    });
+
+    function keepSocketAlive() {
+      if (!socket) return;
+
+      setInterval(() => {
+        if (socket.connected) {
+          console.log('Sending keep-alive ping');
+          socket.emit('ping'); // 서버에 ping 전송
+        }
+      }, 30000); // 30초마다 ping 전송
+    }
+
+    // socket 이벤트 처리
+    socket.on('connect', () => {
+      console.log('Connected to server');
+      keepSocketAlive();
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Disconnected from server');
+    });
+
+    socket.on('chatMessage', (data) => {
+      const chatDiv = document.getElementById('chat');
+      chatDiv.innerHTML += `<p><strong>${data.userId}:</strong> ${data.message}</p>`;
+      chatDiv.scrollTop = chatDiv.scrollHeight; // 최신 메시지로 스크롤 이동
+    });
+
+    socket.on('userList', (data) => {
+      const userListDiv = document.getElementById('userList');
+      userListDiv.innerHTML = ''; // 기존 목록 초기화
+      data.userList.forEach(user => {
+        const li = document.createElement('li');
+        li.textContent = user;
+        userListDiv.appendChild(li);
+      });
+    });
+
+    // 방 입장/퇴장 이벤트 처리
+    socket.on('userJoined', (data) => {
+      const chatDiv = document.getElementById('chat');
+      chatDiv.innerHTML += `<p><strong>${data.userId} is joined.</strong>`;
+    });
+
+    socket.on('userLeft', (data) => {
+      const chatDiv = document.getElementById('chat');
+      chatDiv.innerHTML += `<p><strong>${data.userId} is left.</strong>`;
+    });
+  }
+
+  function setNickname() {
+    const nick = document.getElementById('nickname').value;
+    if (nick && socket) {
+      socket.emit('setUserNick', nick);  // 서버로 닉네임 전송
+    }
+  }
+
+  function joinRoom() {
+    const room = document.getElementById('room').value;
+    if (!room) return alert('방 이름을 입력하세요.');
+
+    socket.emit('join', room);  // 방에 입장 요청
+  }
+
+  function exitRoom() {
+    const room = document.getElementById('room').value;
+    if (!room) return alert('방에 입장한 후 퇴장할 수 있습니다.');
+
+    socket.emit('exit', room);  // 방에서 나가기
+    document.getElementById('userList').innerHTML = '';  // 유저 목록 초기화
+    document.getElementById('chat').innerHTML = ''; // 채팅 기록 초기화
+  }
+
+  function sendMessage() {
+    const message = document.getElementById('message').value;
+    const room = document.getElementById('room').value;
+    if (!message || !room) return alert('메시지와 방 이름을 입력하세요.');
+
+    socket.emit('chatMessage', { message, room });  // 메시지 전송
+  }
+</script>
+</body>
+</html>

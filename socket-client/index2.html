@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebSocket Chat</title>
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <style>
+      body {
+          font-family: Arial, sans-serif;
+          max-width: 600px;
+          margin: 20px auto;
+          text-align: center;
+      }
+      input, button {
+          padding: 8px;
+          margin: 5px;
+          width: 80%;
+      }
+      button {
+          background-color: #007bff;
+          color: white;
+          border: none;
+          cursor: pointer;
+      }
+      button:hover {
+          background-color: #0056b3;
+      }
+      .chat-box, .user-list {
+          border: 1px solid #000;
+          padding: 10px;
+          width: 100%;
+          height: 200px;
+          overflow-y: auto;
+          text-align: left;
+      }
+      .container {
+          margin-bottom: 20px;
+      }
+  </style>
+</head>
+<body>
+
+<h1>WebSocket Chat Room</h1>
+
+<div class="container">
+  <input type="text" id="userId" placeholder="Enter your User Id">
+  <input type="text" id="jwtToken" placeholder="Enter your JWT token">
+  <input type="text" id="socketPort" placeholder="Enter Socket Server Port" value="4000">
+  <button onclick="connectSocket()">Connect</button>
+</div>
+
+<div class="container">
+  <input type="text" id="refreshJwtToken" placeholder="Enter your Refresh JWT token">
+  <button onclick="refreshJWTToken()">Refresh Token</button>
+</div>
+
+<div class="container">
+  <input type="text" id="nickname" placeholder="Enter your nickname">
+  <button onclick="setNickname()">Set Nickname</button>
+</div>
+
+<div class="container">
+  <input type="text" id="room" placeholder="Enter room name">
+  <button onclick="joinRoom()">Join Room</button>
+  <button onclick="exitRoom()">Exit Room</button>
+</div>
+
+<div class="container">
+  <input type="text" id="message" placeholder="Type a message">
+  <button onclick="sendMessage()">Send</button>
+</div>
+
+<h2>Chat</h2>
+<div id="chat" class="chat-box"></div>
+
+<h2>Users in Room</h2>
+<ul id="userList" class="user-list"></ul>
+
+<script>
+  let socket;
+
+  function connectSocket() {
+    const userId = document.getElementById('userId').value;
+    const token = document.getElementById('jwtToken').value;
+    const port = document.getElementById('socketPort').value;
+
+    if (!token) {
+      return alert('토큰을 입력해주세요!');
+    }
+    if (!port) {
+      return alert('포트 번호를 입력해주세요!');
+    }
+
+    const serverUrl = `http://10.10.110.2:${port}`;
+    socket = io(serverUrl, {
+      transports: ['websocket'],
+      auth: { token },
+      query: { userId }
+    });
+
+    socket.on('connect', () => {
+      console.log('Connected to server');
+      setInterval(() => socket.connected && socket.emit('ping'), 30000);
+    });
+
+    socket.on('disconnect', () => console.log('Disconnected from server'));
+
+    socket.on('chatMessage', (data) => {
+      const timeString = new Date(data.time).toLocaleString();
+      updateChat(`<strong>[${timeString}] ${data.nickName}:</strong> ${data.message}`);
+    });
+
+    socket.on('userList', (data) => {
+      document.getElementById('userList').innerHTML = data.userList.map(user => `<li>${user}</li>`).join('');
+    });
+
+    socket.on('userJoined', (data) => {
+      updateChat(`<strong>${data.nickName} joined the room.</strong>`);
+      if (data.userId === userId && data.chatHistory && Array.isArray(data.chatHistory)) {
+        data.chatHistory.forEach(chat => {
+          try {
+            const parsedChat = JSON.parse(chat);
+            const timeString = new Date(parsedChat.time).toLocaleString();
+            updateChat(`<strong>[${timeString}] ${parsedChat.nickName}:</strong> ${parsedChat.message}`);
+          } catch (error) {
+            console.error("Error parsing chat history:", error);
+          }
+        });
+      }
+    });
+    socket.on('userLeft', (data) => {
+      updateChat(`<strong>${data.userId} left the room.</strong>`)
+    });
+
+    socket.on('connect_error', (err) => {
+      try {
+        const errorData = JSON.parse(err.message);
+        if (errorData.code === 401) {
+          alert(`Authentication Error: ${errorData.message} \nDetails: ${errorData.details}`);
+        } else {
+          alert(`Connection Error: ${errorData.message} \nDetails: ${errorData.details}`);
+        }
+      } catch (e) {
+        alert('Unknown connection error occurred.');
+      }
+    });
+  }
+
+  function updateChat(message) {
+    const chatDiv = document.getElementById('chat');
+    chatDiv.innerHTML += `<p>${message}</p>`;
+    chatDiv.scrollTop = chatDiv.scrollHeight;
+  }
+
+  function setNickname() {
+    const nick = document.getElementById('nickname').value;
+    nick && socket && socket.emit('setUserNick', nick);
+  }
+
+  function joinRoom() {
+    const room = document.getElementById('room').value;
+    room ? socket.emit('join', room) : alert('방 이름을 입력하세요.');
+  }
+
+  function exitRoom() {
+    const room = document.getElementById('room').value;
+    if (!room) return alert('방에 입장한 후 퇴장할 수 있습니다.');
+    socket.emit('exit', room);
+    document.getElementById('userList').innerHTML = '';
+    document.getElementById('chat').innerHTML = '';
+  }
+
+  function sendMessage() {
+    const message = document.getElementById('message').value;
+    const room = document.getElementById('room').value;
+    message && room ? socket.emit('chatMessage', { message, room }) : alert('메시지와 방 이름을 입력하세요.');
+  }
+
+  function refreshJWTToken() {
+    const refreshJwtToken = document.getElementById('refreshJwtToken').value;
+    refreshJwtToken && socket && socket.emit('refresh-auth', refreshJwtToken);
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "incremental": true, // ✅ 변경된 파일만 빌드
+    "tsBuildInfoFile": ".tsbuildinfo",
+    "noEmitOnError": false
+  },
+  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
+}

@@ -1,0 +1,49 @@
+namespace Chat;
+
+enum MessageStatus : byte { NORMAL = 0, EDITED = 1, DELETED = 2 }
+
+table ChatMessage {
+  id:string;
+  status:MessageStatus;
+  sender_id:string;
+  content:string;
+  metadata:string;
+  timestamp:long;          // 서버 저장 시각 (Unix ms)
+  event_timestamp:long;    // 이벤트 정렬용 (마이크로초)
+}
+
+table SendMessageRequest {
+  room_id:string;
+  content:string;
+  metadata:string;
+}
+
+table EditMessageRequest {
+  room_id:string;
+  message_id:string;
+  content:string;
+}
+
+table DeleteMessageRequest {
+  room_id:string;
+  message_id:string;
+}
+
+table HistoryRequest {
+  room_id:string;
+  limit:int;              // 기본 50, 최대 500
+  before:string;          // 페이지네이션 커서 (eventTimestamp)
+}
+
+table MessageBatch {
+  messages:[ChatMessage];
+  latest_event_timestamp:long;
+}
+
+table HistoryResponse {
+  messages:[ChatMessage];
+  latest_event_timestamp:long;
+  has_more:bool;
+}
+
+root_type ChatMessage;

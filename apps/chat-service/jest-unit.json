@@ -1,0 +1,27 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": "../../",
+  "setupFiles": ["<rootDir>/test-support/jest-setup.js"],
+  "testMatch": [
+    "<rootDir>/apps/chat-service/test/**/*.spec.ts"
+  ],
+  "transform": {
+    "^.+\\.ts$": "ts-jest"
+  },
+  "collectCoverageFrom": [
+    "apps/chat-service/src/**/*.ts",
+    "!**/*.module.ts",
+    "!**/index.ts",
+    "!**/*.dto.ts",
+    "!**/*.entity.ts"
+  ],
+  "coverageDirectory": "coverage/chat-service",
+  "testEnvironment": "node",
+  "moduleNameMapper": {
+    "^@libs/shared-kernel(|/.*)$": "<rootDir>/libs/shared-kernel/src/$1",
+    "^@libs/common(|/.*)$": "<rootDir>/libs/common/src/$1",
+    "^@libs/dao(|/.*)$": "<rootDir>/libs/dao/src/$1",
+    "^@libs/auth(|/.*)$": "<rootDir>/libs/auth/src/$1",
+    "^@extension/(.*)$": "<rootDir>/libs/common/src/extension/$1"
+  }
+}

@@ -1,0 +1,170 @@
+services:
+        db:
+                container_name: db
+                platform: linux/x86_64
+                image: mysql:8.0.23
+                command:
+                        - --default-authentication-plugin=mysql_native_password
+                        - --character-set-server=utf8mb4
+                        - --collation-server=utf8mb4_unicode_ci
+                        - --lower_case_table_names=1
+                restart: always
+                environment:
+                        MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+                        MYSQL_MAX_CONNECTIONS: 5000
+                volumes:
+                        - ./data:/var/lib/mysql
+#                        - ./initdb.d:/docker-entrypoint-initdb.d
+#                        - ./my.cnf:/etc/mysql/conf.d/my.cnf
+                        - ./init-db/init-db.sh:/init-db.sh
+                entrypoint: ["/bin/bash", "/init-db.sh"]
+                ports:
+                        - "3306:3306"
+        redis:
+                container_name: redis
+                image: redis:alpine
+                ports:
+                        - "6379:6379"
+                volumes:
+                        - ./redis-data:/data
+                environment:
+                        - REDIS_REPLICATION_MODE=master
+                restart: always
+                deploy:
+                        resources:
+                                limits:
+                                        memory: 256M
+        mongo:
+                image: mongo
+                container_name: mongo
+                restart: always
+                environment:
+                        MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+                        MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+                ports:
+                        - "27017:27017"
+                volumes:
+                        - ./mongo_data:/data/db
+        identity:
+                container_name: identity
+                platform: linux/x86_64
+                build:
+                        context: ../
+                        args:
+                                APP_NAME: identity
+                command: node dist/apps/identity/src/main.js
+                environment:
+                        NODE_ENV: test
+                        SERVER_PORT: 8080
+                        PORT: 8080
+                        REDIS_DB_HOST: redis
+                        REDIS_DB_PORT: 6379
+                        CHAT_REDIS_HOST: redis
+                        CHAT_REDIS_PORT: 6379
+                        CHAT_REDIS_DB_NUMBER: 2
+                        PERSONAL_DB_HOST: db
+                        PERSONAL_DB_PORT: 3306
+                        PERSONAL_DB_USER_NAME: ${DB_USER}
+                        PERSONAL_DB_USER_PW: ${DB_USER_PW}
+                        PERSONAL_DB_NAME: personal
+                        PERSONAL_DB_SYNCHRONIZE: "true"
+                        GAME_DB_HOST: db
+                        GAME_DB_PORT: 3306
+                        GAME_DB_USER_NAME: ${DB_USER}
+                        GAME_DB_USER_PW: ${DB_USER_PW}
+                        GAME_DB_NAME: game
+                        GAME_DB_SYNCHRONIZE: "true"
+                        MONGODB_ATLAS_URI: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongo:27017
+                        ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
+                        REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
+                        GROQ_API_KEY: ${GROQ_API_KEY}
+                ports:
+                        - "8080:8080"
+                depends_on:
+                        - db
+                        - redis
+                        - mongo
+        payment:
+                container_name: payment
+                platform: linux/x86_64
+                build:
+                        context: ../
+                        args:
+                                APP_NAME: payment
+                command: node dist/apps/payment/src/main.js
+                environment:
+                        NODE_ENV: test
+                        SERVER_PORT: 8081
+                        PORT: 8081
+                        REDIS_DB_HOST: redis
+                        REDIS_DB_PORT: 6379
+                        CHAT_REDIS_HOST: redis
+                        CHAT_REDIS_PORT: 6379
+                        CHAT_REDIS_DB_NUMBER: 2
+                        PERSONAL_DB_HOST: db
+                        PERSONAL_DB_PORT: 3306
+                        PERSONAL_DB_USER_NAME: ${DB_USER}
+                        PERSONAL_DB_USER_PW: ${DB_USER_PW}
+                        PERSONAL_DB_NAME: personal
+                        PERSONAL_DB_SYNCHRONIZE: "true"
+                        GAME_DB_HOST: db
+                        GAME_DB_PORT: 3306
+                        GAME_DB_USER_NAME: ${DB_USER}
+                        GAME_DB_USER_PW: ${DB_USER_PW}
+                        GAME_DB_NAME: game
+                        GAME_DB_SYNCHRONIZE: "true"
+                        PAYMENT_DB_HOST: db
+                        PAYMENT_DB_PORT: 3306
+                        PAYMENT_DB_USER_NAME: ${DB_USER}
+                        PAYMENT_DB_USER_PW: ${DB_USER_PW}
+                        PAYMENT_DB_NAME: payment
+                        PAYMENT_DB_SYNCHRONIZE: "true"
+                        ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
+                        REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
+                ports:
+                        - "8081:8081"
+                depends_on:
+                        - db
+                        - redis
+        chat-service:
+                container_name: chat-service
+                platform: linux/x86_64
+                build:
+                        context: ../
+                        args:
+                                APP_NAME: chat-service
+                command: node dist/apps/chat-service/apps/chat-service/src/main.js
+                environment:
+                        NODE_ENV: test
+                        PORT: 8082
+                        SOCKET_PORT: 8082
+                        REDIS_DB_HOST: redis
+                        REDIS_DB_PORT: 6379
+                        CHAT_REDIS_HOST: redis
+                        CHAT_REDIS_PORT: 6379
+                        CHAT_REDIS_DB_NUMBER: 2
+                        ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
+                ports:
+                        - "8082:8082"
+                depends_on:
+                        - redis
+#        ngrok:
+#                image: ngrok/ngrok:latest
+#                restart: unless-stopped
+#                command:
+#                        - "start"
+#                        - "--all"
+#                        - "--config"
+#                        - "/etc/ngrok.yml"
+#                volumes:
+#                        - ./ngrok.yml:/etc/ngrok.yml
+#                ports:
+#                        - 4040:4040
+#        ngrok_url_extract:
+#                image: alpine:latest
+#                depends_on:
+#                        - ngrok
+#                volumes:
+#                        - ./ngrok:/ngrok
+#                entrypoint: sh -c "apk update && apk add --no-cache curl jq && sh /ngrok/ngrok-url-extract.sh"
+#                restart: on-failure

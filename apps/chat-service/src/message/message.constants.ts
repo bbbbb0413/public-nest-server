@@ -1,0 +1,4 @@
+export const CHAT_SOCKET_NOTIFY = 'CHAT_SOCKET_NOTIFY';
+export const CHAT_SSE_NOTIFY = 'CHAT_SSE_NOTIFY';
+export const DEFAULT_HISTORY_LIMIT = 50;
+export const MAX_PULL_COUNT = 200;
