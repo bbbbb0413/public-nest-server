@@ -224,9 +224,3 @@ pnpm test:e2e:payment
 10. 앱 모듈 `imports`에 BC 모듈 추가
 
 ---
-
-## 10. 관련 문서
-
-- [`CLAUDE.md`](./CLAUDE.md) — 아키텍처 상세, 코드 컨벤션, 파일 네이밍 규칙
-- [`docs/ddd-migration-debt.md`](./docs/ddd-migration-debt.md) — 마이그레이션 이력 및 잔존 부채
-- [`docs/chat.md`](./docs/chat.md) — 채팅 서비스 설계 문서

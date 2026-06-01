@@ -18,9 +18,12 @@ process.env.CHAT_REDIS_HOST = 'localhost';
 process.env.CHAT_REDIS_PORT = '6379';
 process.env.CHAT_REDIS_DB_NUMBER = '2';
 
-process.env.MONGODB_ATLAS_URI = process.env.MONGODB_ATLAS_URI || 'mongodb://localhost:27017';
-process.env.ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET || 'test-access-secret';
-process.env.REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'test-refresh-secret';
+process.env.MONGODB_ATLAS_URI =
+  process.env.MONGODB_ATLAS_URI || 'mongodb://localhost:27017';
+process.env.ACCESS_TOKEN_SECRET =
+  process.env.ACCESS_TOKEN_SECRET || 'test-access-secret';
+process.env.REFRESH_TOKEN_SECRET =
+  process.env.REFRESH_TOKEN_SECRET || 'test-refresh-secret';
 process.env.GROQ_API_KEY = process.env.GROQ_API_KEY || 'test-groq-key';
 
 import { Test, TestingModule } from '@nestjs/testing';
@@ -72,13 +75,11 @@ describe('Identity E2E', () => {
     });
 
     it('이름이 공백이면 에러 코드 반환', async () => {
-      const res = await request(app.getHttpServer())
-        .post('/auth/signup')
-        .send({
-          name: '   ',
-          email: 'test@example.com',
-          password: 'Test@12345!',
-        });
+      const res = await request(app.getHttpServer()).post('/auth/signup').send({
+        name: '   ',
+        email: 'test@example.com',
+        password: 'Test@12345!',
+      });
 
       expect(res.body.code).not.toBe(0);
     });
