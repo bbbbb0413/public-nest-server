@@ -12,7 +12,7 @@ export class Password {
     return new Password(hashed);
   }
 
-  async compare(raw: string): Promise<boolean> {
+  compare(raw: string): Promise<boolean> {
     return bcrypt.compare(raw, this.hashed);
   }
 

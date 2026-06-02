@@ -1,0 +1,12 @@
+syntax = "proto3";
+package rpc.common;
+
+message Session {
+  string id = 1;
+  string uuid = 2;
+  string nick_name = 3;
+  int64  game_db_id = 4;
+  string database = 5;
+}
+
+message Empty {}

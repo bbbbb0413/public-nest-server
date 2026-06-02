@@ -57,6 +57,7 @@ services:
                         NODE_ENV: test
                         SERVER_PORT: 8080
                         PORT: 8080
+                        IDENTITY_GRPC_URL: "0.0.0.0:50051"
                         REDIS_DB_HOST: redis
                         REDIS_DB_PORT: 6379
                         CHAT_REDIS_HOST: redis
@@ -96,6 +97,7 @@ services:
                         NODE_ENV: test
                         SERVER_PORT: 8081
                         PORT: 8081
+                        PAYMENT_GRPC_URL: "0.0.0.0:50052"
                         REDIS_DB_HOST: redis
                         REDIS_DB_PORT: 6379
                         CHAT_REDIS_HOST: redis
@@ -133,21 +135,52 @@ services:
                         context: ../
                         args:
                                 APP_NAME: chat-service
-                command: node dist/apps/chat-service/apps/chat-service/src/main.js
+                command: node dist/apps/chat-service/src/main.js
                 environment:
                         NODE_ENV: test
-                        PORT: 8082
-                        SOCKET_PORT: 8082
+                        CHAT_GRPC_URL: "0.0.0.0:50053"
                         REDIS_DB_HOST: redis
                         REDIS_DB_PORT: 6379
                         CHAT_REDIS_HOST: redis
                         CHAT_REDIS_PORT: 6379
                         CHAT_REDIS_DB_NUMBER: 2
                         ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
-                ports:
-                        - "8082:8082"
                 depends_on:
                         - redis
+        gateway:
+                container_name: gateway
+                platform: linux/x86_64
+                build:
+                        context: ../
+                        args:
+                                APP_NAME: gateway
+                command: node dist/apps/gateway/src/main.js
+                environment:
+                        NODE_ENV: test
+                        SERVER_PORT: 3000
+                        PORT: 3000
+                        IDENTITY_GRPC_URL: "identity:50051"
+                        PAYMENT_GRPC_URL: "payment:50052"
+                        CHAT_GRPC_URL: "chat-service:50053"
+                        REDIS_DB_HOST: redis
+                        REDIS_DB_PORT: 6379
+                        CHAT_REDIS_HOST: redis
+                        CHAT_REDIS_PORT: 6379
+                        CHAT_REDIS_DB_NUMBER: 2
+                        PERSONAL_DB_HOST: db
+                        PERSONAL_DB_PORT: 3306
+                        PERSONAL_DB_USER_NAME: ${DB_USER}
+                        PERSONAL_DB_USER_PW: ${DB_USER_PW}
+                        PERSONAL_DB_NAME: personal
+                        PERSONAL_DB_SYNCHRONIZE: "true"
+                        ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
+                        REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
+                ports:
+                        - "3000:3000"
+                depends_on:
+                        - identity
+                        - payment
+                        - chat-service
 #        ngrok:
 #                image: ngrok/ngrok:latest
 #                restart: unless-stopped

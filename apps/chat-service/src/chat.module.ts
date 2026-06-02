@@ -10,11 +10,12 @@ import { ChatServerConfig } from './config/chat-server-config';
 import { IChatMessageStore } from './message/domain/port/chat-message-store.port';
 import { IPubSubPort } from './message/domain/port/pub-sub.port';
 import { ChatMessageStoreAdapter } from './message/infrastructure/chat-message-store.adapter';
+import { ChatGrpcController } from './message/rpc/chat.grpc-controller';
 
 @Module({
   imports: [ChatServerConfig, EventEmitterModule.forRoot(), RedisClusterModule],
+  controllers: [ChatGrpcController],
   providers: [
-    ChatGateway,
     SocketConnectionService,
     MessageService,
     ShardedPubSubService,

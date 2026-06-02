@@ -50,3 +50,4 @@ docker/.env
 # AI
 CLAUDE.md
 docs/ddd-migration-debt.md
+.antigravitycli

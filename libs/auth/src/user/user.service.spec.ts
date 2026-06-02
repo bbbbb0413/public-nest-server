@@ -48,24 +48,24 @@ describe('UserService', () => {
   });
 
   describe('isPasswordComplexity', () => {
-    it('복잡도 미달 비밀번호면 ServerErrorException을 던진다', async () => {
-      await expect(
+    it('복잡도 미달 비밀번호면 ServerErrorException을 던진다', () => {
+      expect(() =>
         service.isPasswordComplexity({
           email: 't@e.com',
           password: 'pw',
           name: 'n',
         }),
-      ).rejects.toThrow(ServerErrorException);
+      ).toThrow(ServerErrorException);
     });
 
-    it('유효한 비밀번호면 통과한다', async () => {
-      await expect(
+    it('유효한 비밀번호면 통과한다', () => {
+      expect(() =>
         service.isPasswordComplexity({
           email: 't@e.com',
           password: 'Test@12345!',
           name: 'n',
         }),
-      ).resolves.toBeUndefined();
+      ).not.toThrow();
     });
   });
 
@@ -195,8 +195,8 @@ describe('UserService', () => {
   });
 
   describe('updateRole', () => {
-    it('미구현 상태이므로 항상 ServerErrorException을 던진다', async () => {
-      await expect(service.updateRole({ userId: 1 })).rejects.toThrow(
+    it('미구현 상태이므로 항상 ServerErrorException을 던진다', () => {
+      expect(() => service.updateRole({ userId: 1 })).toThrow(
         ServerErrorException,
       );
     });

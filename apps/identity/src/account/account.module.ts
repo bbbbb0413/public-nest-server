@@ -8,6 +8,8 @@ import { GameAccountRepository } from './domain/repository/game-account.reposito
 import { SessionPort } from './domain/port/session.port';
 import { GameAccountRepositoryImpl } from './infrastructure/persistence/game-account.repository-impl';
 import { SessionAdapter } from './infrastructure/session/session.adapter';
+import { IdentityGrpcController } from './rpc/identity.grpc-controller';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
@@ -16,8 +18,9 @@ import { SessionAdapter } from './infrastructure/session/session.adapter';
       [GameDatabaseConfig().name],
     ),
     SessionModule,
+    MailModule,
   ],
-  controllers: [LoginController],
+  controllers: [LoginController, IdentityGrpcController],
   providers: [
     LoginUseCase,
     { provide: GameAccountRepository, useClass: GameAccountRepositoryImpl },

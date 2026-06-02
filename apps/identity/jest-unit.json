@@ -4,14 +4,16 @@
   "setupFiles": ["<rootDir>/test-support/jest-setup.js"],
   "testMatch": [
     "<rootDir>/apps/identity/src/**/*.spec.ts",
-    "<rootDir>/libs/auth/src/**/*.spec.ts"
+    "<rootDir>/libs/auth/src/**/*.spec.ts",
+    "<rootDir>/libs/rpc/src/**/*.spec.ts"
   ],
   "transform": {
-    "^.+\\.ts$": "ts-jest"
+    "^.+\\.ts$": ["ts-jest", { "tsconfig": "./tsconfig.spec.json" }]
   },
   "collectCoverageFrom": [
     "apps/identity/src/**/*.ts",
     "libs/auth/src/**/*.ts",
+    "libs/rpc/src/**/*.ts",
     "!**/*.module.ts",
     "!**/index.ts",
     "!**/*.dto.ts",
@@ -24,6 +26,7 @@
     "^@libs/common(|/.*)$": "<rootDir>/libs/common/src/$1",
     "^@libs/dao(|/.*)$": "<rootDir>/libs/dao/src/$1",
     "^@libs/auth(|/.*)$": "<rootDir>/libs/auth/src/$1",
+    "^@libs/rpc(|/.*)$": "<rootDir>/libs/rpc/src/$1",
     "^@extension/(.*)$": "<rootDir>/libs/common/src/extension/$1"
   }
 }

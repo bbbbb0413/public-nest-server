@@ -1,0 +1,18 @@
+syntax = "proto3";
+package rpc.auth;
+
+import "common.proto";
+
+service AuthService {
+  rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenResponse);
+}
+
+message ValidateTokenRequest {
+  string scheme = 1;
+  string credential = 2;
+}
+
+message ValidateTokenResponse {
+  bool valid = 1;
+  rpc.common.Session session = 2;
+}

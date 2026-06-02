@@ -1,0 +1,28 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": "../../",
+  "setupFiles": ["<rootDir>/test-support/jest-setup.js"],
+  "testMatch": [
+    "<rootDir>/apps/gateway/src/**/*.spec.ts"
+  ],
+  "transform": {
+    "^.+\\.ts$": ["ts-jest", { "tsconfig": "./tsconfig.spec.json" }]
+  },
+  "collectCoverageFrom": [
+    "apps/gateway/src/**/*.ts",
+    "!**/*.module.ts",
+    "!**/index.ts",
+    "!**/*.dto.ts",
+    "!**/*.entity.ts"
+  ],
+  "coverageDirectory": "coverage/gateway",
+  "testEnvironment": "node",
+  "moduleNameMapper": {
+    "^@libs/shared-kernel(|/.*)$": "<rootDir>/libs/shared-kernel/src/$1",
+    "^@libs/common(|/.*)$": "<rootDir>/libs/common/src/$1",
+    "^@libs/dao(|/.*)$": "<rootDir>/libs/dao/src/$1",
+    "^@libs/auth(|/.*)$": "<rootDir>/libs/auth/src/$1",
+    "^@libs/rpc(|/.*)$": "<rootDir>/libs/rpc/src/$1",
+    "^@extension/(.*)$": "<rootDir>/libs/common/src/extension/$1"
+  }
+}

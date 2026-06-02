@@ -1,0 +1,41 @@
+syntax = "proto3";
+package rpc.identity;
+
+import "common.proto";
+
+service IdentityService {
+  rpc Login          (LoginRequest)          returns (LoginResponse);
+  rpc GetGameAccount (GetGameAccountRequest) returns (GameAccountReply);
+  rpc SendMail       (SendMailRequest)       returns (SendMailResponse);
+}
+
+message LoginRequest {
+  string uuid = 1;
+}
+
+message LoginResponse {
+  int64  id = 1;
+  string uuid = 2;
+  string nick_name = 3;
+}
+
+message GetGameAccountRequest {
+  string uuid = 1;
+}
+
+message GameAccountReply {
+  int64  id = 1;
+  string uuid = 2;
+  string nick_name = 3;
+}
+
+message SendMailRequest {
+  int64  account_id = 1;
+  string title = 2;
+  string body = 3;
+}
+
+message SendMailResponse {
+  int64 mail_id = 1;
+  bool  delivered = 2;
+}

@@ -23,7 +23,7 @@ COPY --chown=appuser:appuser package.json pnpm-lock.yaml ./
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 COPY --chown=appuser:appuser . .
-RUN pnpm run build $APP_NAME
+RUN pnpm run build:$APP_NAME
 
 
 FROM base

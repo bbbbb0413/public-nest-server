@@ -39,7 +39,7 @@ export class UserService {
     }
   }
 
-  async isPasswordComplexity(dto: AuthSignUserInDto): Promise<void> {
+  isPasswordComplexity(dto: AuthSignUserInDto): void {
     const result = joiPasswordComplexity(PASSWORD_COMPLEXITY_OPTIONS).validate(
       dto.password,
     );
@@ -112,7 +112,7 @@ export class UserService {
     return this.findById(id);
   }
 
-  async updateRole(_updateRoleUserDto: UpdateRoleUserDto): Promise<UserOutDto> {
+  updateRole(_updateRoleUserDto: UpdateRoleUserDto): never {
     throw new ServerErrorException(INTERNAL_ERROR_CODE.ERROR);
   }
 

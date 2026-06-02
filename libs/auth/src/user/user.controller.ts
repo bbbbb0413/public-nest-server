@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Post,
   Put,
   Query,
@@ -45,7 +46,7 @@ export class UserController {
 
   @Get('/:id')
   @ApiResponseEntity({ type: UserOutDto, summary: '관리자 정보' })
-  async findOne(@Param('id') id: number): Promise<ResponseEntity<UserOutDto>> {
+  async findOne(@Param('id', ParseIntPipe) id: number): Promise<ResponseEntity<UserOutDto>> {
     const userDto = await this.userService.findById(id);
     return ResponseEntity.ok().body(userDto);
   }
@@ -90,7 +91,7 @@ export class UserController {
   @Delete('/:id')
   @ApiResponseEntity({ summary: '어드민 유저 삭제' })
   async removeAdminUser(
-    @Param('id') id: number,
+    @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: any,
   ): Promise<ResponseEntity<unknown>> {
     await this.userService.removeAdminUser(id, user.email);

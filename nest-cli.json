@@ -37,6 +37,22 @@
         "tsConfigPath": "libs/auth/tsconfig.lib.json"
       }
     },
+    "rpc": {
+      "type": "library",
+      "root": "libs/rpc",
+      "entryFile": "index",
+      "sourceRoot": "libs/rpc/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/rpc/tsconfig.lib.json",
+        "assets": [
+          {
+            "include": "../proto/**/*.proto",
+            "outDir": "dist/libs/rpc/proto",
+            "watchAssets": true
+          }
+        ]
+      }
+    },
     "identity": {
       "type": "application",
       "root": "apps/identity",
@@ -62,6 +78,15 @@
       "sourceRoot": "apps/chat-service/src",
       "compilerOptions": {
         "tsConfigPath": "apps/chat-service/tsconfig.app.json"
+      }
+    },
+    "gateway": {
+      "type": "application",
+      "root": "apps/gateway",
+      "entryFile": "main",
+      "sourceRoot": "apps/gateway/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/gateway/tsconfig.app.json"
       }
     }
   }

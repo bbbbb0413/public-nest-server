@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmExModule } from '@libs/common/databases/typeorm/typeorm-ex.module';
 import PersonalDatabaseConfig from '@libs/common/config/database/personal-database.config';
 import { PaymentController } from './presentation/payment.controller';
+import { PaymentGrpcController } from './rpc/payment.grpc-controller';
 import { CreatePaymentUseCase } from './application/create-payment.use-case';
 import { IPaymentRepository } from './domain/repository/payment.repository';
 import { PaymentRepositoryImpl } from './infrastructure/persistence/payment.repository-impl';
@@ -13,7 +14,7 @@ import { PaymentRepositoryImpl } from './infrastructure/persistence/payment.repo
       [PersonalDatabaseConfig().name],
     ),
   ],
-  controllers: [PaymentController],
+  controllers: [PaymentController, PaymentGrpcController],
   providers: [
     CreatePaymentUseCase,
     { provide: IPaymentRepository, useClass: PaymentRepositoryImpl },
