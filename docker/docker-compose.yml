@@ -35,7 +35,7 @@ services:
                                 limits:
                                         memory: 256M
         mongo:
-                image: mongo
+                image: mongodb/mongodb-atlas-local:latest
                 container_name: mongo
                 restart: always
                 environment:
@@ -75,7 +75,7 @@ services:
                         GAME_DB_USER_PW: ${DB_USER_PW}
                         GAME_DB_NAME: game
                         GAME_DB_SYNCHRONIZE: "true"
-                        MONGODB_ATLAS_URI: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongo:27017
+                        MONGODB_ATLAS_URI: mongodb://mongo:27017
                         ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
                         REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
                         GROQ_API_KEY: ${GROQ_API_KEY}
@@ -181,6 +181,41 @@ services:
                         - identity
                         - payment
                         - chat-service
+        ai-service:
+                container_name: ai-service
+                build:
+                        context: ../
+                        dockerfile: Dockerfile
+                        args:
+                                APP_NAME: ai-service
+                command: node dist/apps/ai-service/src/main.js
+                environment:
+                        NODE_ENV: test
+                        AI_SERVICE_PORT: 3004
+
+                        LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
+                        EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-ollama}
+
+                        # Ollama는 호스트에서 실행 (Metal GPU 가속)
+                        OLLAMA_BASE_URL: http://host.docker.internal:11434
+                        OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:14b}
+                        OLLAMA_EMBEDDING_MODEL: ${OLLAMA_EMBEDDING_MODEL:-bge-m3}
+
+                        # 클라우드 LLM (선택)
+                        ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+                        OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+                        GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+                        GROQ_API_KEY: ${GROQ_API_KEY:-}
+
+                        MONGODB_VECTOR_URI: mongodb://mongo:27017
+                        MONGODB_DB_NAME: ai_service
+                ports:
+                        - "3004:3004"
+                extra_hosts:
+                        - "host.docker.internal:host-gateway"
+                depends_on:
+                        - mongo
+                restart: unless-stopped
 #        ngrok:
 #                image: ngrok/ngrok:latest
 #                restart: unless-stopped

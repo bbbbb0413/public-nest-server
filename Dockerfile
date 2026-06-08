@@ -24,6 +24,10 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 COPY --chown=appuser:appuser . .
 RUN pnpm run build:$APP_NAME
+RUN if [ -d "dist/libs/rpc/src" ]; then \
+      mkdir -p dist/libs/rpc/proto && \
+      cp -r libs/rpc/proto/. dist/libs/rpc/proto/; \
+    fi
 
 
 FROM base

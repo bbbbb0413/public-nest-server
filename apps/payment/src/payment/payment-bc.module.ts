@@ -17,7 +17,7 @@ import { PaymentRepositoryImpl } from './infrastructure/persistence/payment.repo
   controllers: [PaymentController, PaymentGrpcController],
   providers: [
     CreatePaymentUseCase,
-    { provide: IPaymentRepository, useClass: PaymentRepositoryImpl },
+    { provide: IPaymentRepository, useExisting: PaymentRepositoryImpl },
   ],
 })
 export class PaymentBcModule {}

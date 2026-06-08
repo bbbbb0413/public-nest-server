@@ -41,7 +41,7 @@ import { SessionRepository } from './infrastructure/session/session.repository';
     ContextProvider,
     AuthService,
     UserService,
-    { provide: IUsersRepository, useClass: UsersRepositoryImpl },
+    { provide: IUsersRepository, useExisting: UsersRepositoryImpl },
     { provide: ISessionRepository, useClass: SessionRepository },
   ],
   exports: [AuthService, UserService],

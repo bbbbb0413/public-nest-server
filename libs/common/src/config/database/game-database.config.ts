@@ -13,8 +13,8 @@ export default registerAs('game-database', () => ({
     process.env.GAME_DB_SYNCHRONIZE &&
     JSON.parse(process.env.GAME_DB_SYNCHRONIZE),
   entities: [
-    __dirname + '/../../../../libs/dao/src/game/**/*.entity.{ts,js}',
+    __dirname + '/../../../../../libs/dao/src/game/**/*.entity.{ts,js}',
     __dirname +
-      '/../../../../apps/identity/src/account/infrastructure/orm/*.orm-entity.{ts,js}',
+      '/../../../../../apps/identity/src/account/infrastructure/orm/*.orm-entity.{ts,js}',
   ],
 }));

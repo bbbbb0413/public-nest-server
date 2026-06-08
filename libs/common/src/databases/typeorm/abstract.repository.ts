@@ -7,6 +7,7 @@ import { InsertResult } from 'typeorm/query-builder/result/InsertResult';
 import { UpsertOptions } from 'typeorm/repository/UpsertOptions';
 import { SaveOptions } from 'typeorm/repository/SaveOptions';
 import { TypeOrmHelper } from '@libs/common/databases/typeorm/typeorm.helper';
+import { getDataSourceName } from '@libs/common/databases/typeorm/typeorm-ex.module';
 import { ServerErrorException } from '@libs/common/exception/server-error.exception';
 import { INTERNAL_ERROR_CODE } from '@libs/common/constants/internal-error-code.constants';
 import { AbstractRepositoryInterface } from '@libs/common/databases/typeorm/abstract-repository.interface';
@@ -19,7 +20,7 @@ export abstract class AbstractRepository<Entity>
 
   private get entityManager(): EntityManager {
     const queryRunner = TypeOrmHelper.getQueryRunner(
-      this.metadata.connection.name,
+      getDataSourceName(this.metadata.connection),
     );
 
     return queryRunner ? queryRunner.manager : this.manager;

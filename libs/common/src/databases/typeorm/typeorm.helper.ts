@@ -1,4 +1,7 @@
-import { getDataSource } from '@libs/common/databases/typeorm/typeorm-ex.module';
+import {
+  getDataSource,
+  getDataSourceName,
+} from '@libs/common/databases/typeorm/typeorm-ex.module';
 import { QueryRunner } from 'typeorm';
 import { ContextProvider } from '@libs/common/provider/context.provider';
 
@@ -48,7 +51,9 @@ export class TypeOrmHelper {
     );
 
     return Object.fromEntries(
-      dataSources.filter((it) => !!it).map((it) => [it.connection.name, it]),
+      dataSources
+        .filter((it) => !!it)
+        .map((it) => [getDataSourceName(it.connection), it]),
     );
   }
 

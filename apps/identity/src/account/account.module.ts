@@ -23,7 +23,7 @@ import { MailModule } from '../mail/mail.module';
   controllers: [LoginController, IdentityGrpcController],
   providers: [
     LoginUseCase,
-    { provide: GameAccountRepository, useClass: GameAccountRepositoryImpl },
+    { provide: GameAccountRepository, useExisting: GameAccountRepositoryImpl },
     { provide: SessionPort, useClass: SessionAdapter },
   ],
 })

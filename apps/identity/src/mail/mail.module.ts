@@ -11,10 +11,7 @@ import { MailRepositoryImpl } from './infrastructure/persistence/mail.repository
       [PersonalDatabaseConfig().name],
     ),
   ],
-  providers: [
-    MailRepositoryImpl,
-    { provide: IMailRepository, useClass: MailRepositoryImpl },
-  ],
+  providers: [{ provide: IMailRepository, useExisting: MailRepositoryImpl }],
   exports: [IMailRepository],
 })
 export class MailModule {}

@@ -13,8 +13,8 @@ export default registerAs('payment-database', () => ({
     process.env.PAYMENT_DB_SYNCHRONIZE &&
     JSON.parse(process.env.PAYMENT_DB_SYNCHRONIZE),
   entities: [
-    __dirname + '/../../../../libs/dao/src/payment/**/*.entity.{ts,js}',
+    __dirname + '/../../../../../libs/dao/src/payment/**/*.entity.{ts,js}',
     __dirname +
-      '/../../../../apps/payment/src/payment/infrastructure/orm/*.orm-entity.{ts,js}',
+      '/../../../../../apps/payment/src/payment/infrastructure/orm/*.orm-entity.{ts,js}',
   ],
 }));

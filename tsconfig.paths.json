@@ -11,7 +11,9 @@
       "@libs/rpc": ["libs/rpc/src"],
       "@libs/rpc/*": ["libs/rpc/src/*"],
       "@extension/*": ["libs/common/src/extension/*"],
-      "@extension/": ["libs/common/src/extension"]
+      "@extension/": ["libs/common/src/extension"],
+      "@libs/llm": ["libs/llm/src"],
+      "@libs/llm/*": ["libs/llm/src/*"]
     }
   }
 }

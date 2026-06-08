@@ -13,13 +13,13 @@ export default registerAs('personal-database', () => ({
     process.env.PERSONAL_DB_SYNCHRONIZE &&
     JSON.parse(process.env.PERSONAL_DB_SYNCHRONIZE),
   entities: [
-    __dirname + '/../../../../libs/dao/src/personal/**/*.entity.{ts,js}',
-    __dirname + '/../../../../libs/dao/src/payment/**/*.entity.{ts,js}',
+    __dirname + '/../../../../../libs/dao/src/personal/**/*.entity.{ts,js}',
+    __dirname + '/../../../../../libs/dao/src/payment/**/*.entity.{ts,js}',
     __dirname +
-      '/../../../../libs/auth/src/user/infrastructure/orm/*.orm-entity.{ts,js}',
+      '/../../../../../libs/auth/src/user/infrastructure/orm/*.orm-entity.{ts,js}',
     __dirname +
-      '/../../../../apps/identity/src/mail/infrastructure/orm/*.orm-entity.{ts,js}',
+      '/../../../../../apps/identity/src/mail/infrastructure/orm/*.orm-entity.{ts,js}',
     __dirname +
-      '/../../../../apps/payment/src/payment/infrastructure/orm/*.orm-entity.{ts,js}',
+      '/../../../../../apps/payment/src/payment/infrastructure/orm/*.orm-entity.{ts,js}',
   ],
 }));

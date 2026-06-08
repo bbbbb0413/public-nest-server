@@ -12,6 +12,9 @@ const customDataSources: Record<string, DataSource> = {};
 export function getDataSource(dataSourceName: string): DataSource | null {
   return customDataSources[dataSourceName] || null;
 }
+export function getDataSourceName(dataSource: DataSource): string | undefined {
+  return (dataSource.options as TypeOrmModuleOptions).name;
+}
 
 export class TypeOrmExModule {
   public static forRoot(options?: TypeOrmModuleOptions): DynamicModule {
@@ -46,7 +49,7 @@ export class TypeOrmExModule {
           const result: Record<string, typeof repository> = {};
 
           for (const dataSource of dataSources) {
-            const database = dataSource.options.name as string;
+            const database = (dataSource.options as TypeOrmModuleOptions).name;
 
             if (!customDataSources[database]) {
               customDataSources[database] = dataSource;
