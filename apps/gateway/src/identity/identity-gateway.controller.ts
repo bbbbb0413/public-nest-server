@@ -1,14 +1,37 @@
-import { Body, Controller, Get, Inject, OnModuleInit, Param, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Inject,
+  OnModuleInit,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { firstValueFrom } from 'rxjs';
 import { GatewayAuthGuard } from '../auth/gateway-auth.guard';
 import { Public } from '../auth/public.decorator';
-import { IdentityServiceClient, LoginResponse, GameAccountReply, SendMailResponse, toMetadata } from '@libs/rpc';
+import {
+  IdentityServiceClient,
+  GameAccountReply,
+  SendMailResponse,
+  toMetadata,
+} from '@libs/rpc';
+import { AuthService } from '@libs/auth';
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
 import { SendMailDto } from './dto/send-mail.dto';
 import { ResponseEntity } from '@libs/common/network/response-entity';
 import { ApiResponseEntity } from '@libs/common/decorator/api-response-entity';
+
+interface TokenResponse {
+  token: string;
+  uuid: string;
+  nickName: string;
+}
 
 @ApiTags('Identity')
 @Controller()
@@ -17,20 +40,52 @@ export class IdentityGatewayController implements OnModuleInit {
 
   constructor(
     @Inject('IDENTITY_SERVICE') private readonly client: ClientGrpc,
+    private readonly authService: AuthService,
   ) {}
 
   onModuleInit() {
-    this.identityService = this.client.getService<IdentityServiceClient>('IdentityService');
+    this.identityService =
+      this.client.getService<IdentityServiceClient>('IdentityService');
   }
 
   @Public()
   @Post('auth/login')
   @ApiResponseEntity({ type: Object, summary: '게임 유저 로그인' })
-  async login(@Body() dto: LoginDto): Promise<ResponseEntity<LoginResponse>> {
+  async login(@Body() dto: LoginDto): Promise<ResponseEntity<TokenResponse>> {
     const reply = await firstValueFrom(
       this.identityService.login({ uuid: dto.uuid }),
     );
-    return ResponseEntity.ok().body(reply);
+    const token = this.authService.makeAuthToken({
+      uuid: reply.uuid,
+      nickName: reply.nickName,
+      activatedAt: new Date(),
+    });
+    return ResponseEntity.ok().body({
+      token,
+      uuid: reply.uuid,
+      nickName: reply.nickName,
+    });
+  }
+
+  @Public()
+  @Post('auth/register')
+  @ApiResponseEntity({ type: Object, summary: '게임 유저 회원가입' })
+  async register(
+    @Body() dto: RegisterDto,
+  ): Promise<ResponseEntity<TokenResponse>> {
+    const reply = await firstValueFrom(
+      this.identityService.register({ nickName: dto.nickName }),
+    );
+    const token = this.authService.makeAuthToken({
+      uuid: reply.uuid,
+      nickName: reply.nickName,
+      activatedAt: new Date(),
+    });
+    return ResponseEntity.ok().body({
+      token,
+      uuid: reply.uuid,
+      nickName: reply.nickName,
+    });
   }
 
   @ApiBearerAuth('jwt')

@@ -12,8 +12,10 @@ services:
                 environment:
                         MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
                         MYSQL_MAX_CONNECTIONS: 5000
+                        DB_USER: ${DB_USER}
+                        DB_USER_PW: ${DB_USER_PW}
                 volumes:
-                        - ./data:/var/lib/mysql
+                        - mysql_data:/var/lib/mysql
 #                        - ./initdb.d:/docker-entrypoint-initdb.d
 #                        - ./my.cnf:/etc/mysql/conf.d/my.cnf
                         - ./init-db/init-db.sh:/init-db.sh
@@ -26,7 +28,7 @@ services:
                 ports:
                         - "6379:6379"
                 volumes:
-                        - ./redis-data:/data
+                        - redis_data:/data
                 environment:
                         - REDIS_REPLICATION_MODE=master
                 restart: always
@@ -44,7 +46,8 @@ services:
                 ports:
                         - "27017:27017"
                 volumes:
-                        - ./mongo_data:/data/db
+                        - mongo_data:/data/db
+                        - mongo_configdb:/data/configdb
         identity:
                 container_name: identity
                 platform: linux/x86_64
@@ -79,6 +82,7 @@ services:
                         ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
                         REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
                         GROQ_API_KEY: ${GROQ_API_KEY}
+                        ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:5175}
                 ports:
                         - "8080:8080"
                 depends_on:
@@ -123,6 +127,7 @@ services:
                         PAYMENT_DB_SYNCHRONIZE: "true"
                         ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
                         REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
+                        ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:5175}
                 ports:
                         - "8081:8081"
                 depends_on:
@@ -175,6 +180,7 @@ services:
                         PERSONAL_DB_SYNCHRONIZE: "true"
                         ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
                         REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
+                        ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:5175}
                 ports:
                         - "3000:3000"
                 depends_on:
@@ -198,8 +204,9 @@ services:
 
                         # Ollama는 호스트에서 실행 (Metal GPU 가속)
                         OLLAMA_BASE_URL: http://host.docker.internal:11434
-                        OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:14b}
+                        OLLAMA_MODEL: ${OLLAMA_MODEL:-phi4:14b}
                         OLLAMA_EMBEDDING_MODEL: ${OLLAMA_EMBEDDING_MODEL:-bge-m3}
+                        LLM_FALLBACK_CHAIN: ${LLM_FALLBACK_CHAIN:-${OLLAMA_MODEL:-phi4:14b}}
 
                         # 클라우드 LLM (선택)
                         ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
@@ -207,8 +214,11 @@ services:
                         GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
                         GROQ_API_KEY: ${GROQ_API_KEY:-}
 
+                        REDIS_DB_HOST: redis
+                        REDIS_DB_PORT: 6379
                         MONGODB_VECTOR_URI: mongodb://mongo:27017
                         MONGODB_DB_NAME: ai_service
+                        ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:5175}
                 ports:
                         - "3004:3004"
                 extra_hosts:
@@ -236,3 +246,9 @@ services:
 #                        - ./ngrok:/ngrok
 #                entrypoint: sh -c "apk update && apk add --no-cache curl jq && sh /ngrok/ngrok-url-extract.sh"
 #                restart: on-failure
+
+volumes:
+        mysql_data:
+        redis_data:
+        mongo_data:
+        mongo_configdb:

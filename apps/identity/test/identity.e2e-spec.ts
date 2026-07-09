@@ -25,6 +25,7 @@ process.env.ACCESS_TOKEN_SECRET =
 process.env.REFRESH_TOKEN_SECRET =
   process.env.REFRESH_TOKEN_SECRET || 'test-refresh-secret';
 process.env.GROQ_API_KEY = process.env.GROQ_API_KEY || 'test-groq-key';
+process.env.SOCKET_PORT = '0';
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';

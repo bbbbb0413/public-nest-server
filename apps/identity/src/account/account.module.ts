@@ -4,6 +4,7 @@ import GameDatabaseConfig from '@libs/common/config/database/game-database.confi
 import { SessionModule } from '@libs/auth/auth/infrastructure/session/session.module';
 import { LoginController } from './presentation/login.controller';
 import { LoginUseCase } from './application/login.use-case';
+import { RegisterUseCase } from './application/register.use-case';
 import { GameAccountRepository } from './domain/repository/game-account.repository';
 import { SessionPort } from './domain/port/session.port';
 import { GameAccountRepositoryImpl } from './infrastructure/persistence/game-account.repository-impl';
@@ -23,6 +24,7 @@ import { MailModule } from '../mail/mail.module';
   controllers: [LoginController, IdentityGrpcController],
   providers: [
     LoginUseCase,
+    RegisterUseCase,
     { provide: GameAccountRepository, useExisting: GameAccountRepositoryImpl },
     { provide: SessionPort, useClass: SessionAdapter },
   ],

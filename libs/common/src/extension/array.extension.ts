@@ -18,43 +18,57 @@ declare global {
   }
 }
 
-Array.prototype.isEmpty = function (): boolean {
+// Use Object.defineProperty so extensions are non-enumerable.
+// pdfjs-dist v4 throws UnknownErrorException if Array.prototype has any
+// enumerable properties (it validates this at load time).
+function defineArrayMethod(
+  name: string,
+  fn: (...args: unknown[]) => unknown,
+): void {
+  Object.defineProperty(Array.prototype, name, {
+    value: fn,
+    enumerable: false,
+    writable: true,
+    configurable: true,
+  });
+}
+
+defineArrayMethod('isEmpty', function (this: unknown[]): boolean {
   return this.length === 0;
-};
+});
 
-Array.prototype.isNotEmpty = function (): boolean {
+defineArrayMethod('isNotEmpty', function (this: unknown[]): boolean {
   return this.length !== 0;
-};
+});
 
-Array.prototype.sum = function (): number {
+defineArrayMethod('sum', function (this: number[]): number {
   return this.reduce((acc: number, cur: number) => acc + cur, 0);
-};
+});
 
-Array.prototype.hasDuplicates = function (): boolean {
+defineArrayMethod('hasDuplicates', function (this: unknown[]): boolean {
   const uniqueSet = new Set(this);
   return this.length - uniqueSet.size > 0;
-};
+});
 
-Array.prototype.distinct = function <T>(): T[] {
+defineArrayMethod('distinct', function <T>(this: T[]): T[] {
   return [...new Set(this)] as T[];
-};
+});
 
-Array.prototype.hasCommonElements = function <T>(
-  items: (T | ConcatArray<T>)[],
-): boolean {
-  const combinedSet = new Set([...this, ...items]);
-
+defineArrayMethod('hasCommonElements', function <
+  T,
+>(this: T[], items: (T | ConcatArray<T>)[]): boolean {
+  const combinedSet = new Set([...this, ...(items as T[])]);
   return combinedSet.size < this.length + items.length;
-};
+});
 
-Array.prototype.generateSubsets = function (): number[][] {
-  if (this.isEmpty()) {
+defineArrayMethod('generateSubsets', function (this: number[]): number[][] {
+  if (this.length === 0) {
     return [];
   }
 
   const result: number[][] = [];
-
   const n = this.length;
+
   for (let i = 0; i < Math.pow(2, n); i++) {
     const subset = new Array(n).fill(0);
 
@@ -64,14 +78,13 @@ Array.prototype.generateSubsets = function (): number[][] {
       }
     }
 
-    // check duplicate
     if (!result.some((it) => JSON.stringify(it) === JSON.stringify(subset))) {
       result.push(subset);
     }
   }
 
   return result;
-};
+});
 
 /**
  * Checks whether the current array and the given array contain the same elements,
@@ -90,7 +103,7 @@ Array.prototype.generateSubsets = function (): number[][] {
  * [1, 1, 2].hasSameElements([1, 2, 2]); // true
  * [1, 2].hasSameElements([1, 2, 3]);   // false
  */
-Array.prototype.hasSameElements = function <T>(this: T[], a: T[]): boolean {
+defineArrayMethod('hasSameElements', function <T>(this: T[], a: T[]): boolean {
   if (!Array.isArray(a)) return false;
   if (this.length !== a.length) return false;
 
@@ -100,6 +113,6 @@ Array.prototype.hasSameElements = function <T>(this: T[], a: T[]): boolean {
   if (setA.size !== setB.size) return false;
 
   return [...setA].every((v) => setB.has(v));
-};
+});
 
 export {};

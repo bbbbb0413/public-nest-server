@@ -6,6 +6,9 @@ export interface VectorDocument {
     documentId: string;
     fileName: string;
     chunkIndex: number;
+    charCount?: number;
+    parentText?: string;
+    parentChunkId?: string;
   };
 }
 
@@ -21,6 +24,10 @@ export interface IVectorStorePort {
     queryEmbedding: number[],
     topK: number,
   ): Promise<SimilaritySearchResult[]>;
+  findByParentChunkIds(
+    parentChunkIds: string[],
+  ): Promise<SimilaritySearchResult[]>;
+  findChunksByDocumentId(documentId: string): Promise<SimilaritySearchResult[]>;
   deleteByDocumentId(documentId: string): Promise<void>;
 }
 

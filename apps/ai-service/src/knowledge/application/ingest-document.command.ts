@@ -3,5 +3,6 @@ export class IngestDocumentCommand {
     readonly fileName: string,
     readonly mimeType: string,
     readonly buffer: Buffer,
+    readonly documentId?: string,
   ) {}
 }

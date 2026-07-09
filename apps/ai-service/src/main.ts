@@ -1,10 +1,13 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { initOtelGenai } from '@libs/common/observability/otel-genai.config';
 import { AiModule } from './ai.module';
 
 async function bootstrap() {
+  initOtelGenai();
   const app = await NestFactory.create(AiModule);
+  const logger = new Logger('Bootstrap');
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -13,7 +16,15 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     }),
   );
-  app.enableCors();
+
+  app.enableCors({
+    origin: process.env.ALLOWED_ORIGINS?.split(',') ?? [
+      'http://localhost:3000',
+      'http://localhost:5175',
+    ],
+    credentials: true,
+    exposedHeaders: ['X-Session-Id'],
+  });
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('AI Service')
@@ -28,7 +39,7 @@ async function bootstrap() {
 
   const port = process.env.AI_SERVICE_PORT ?? 3004;
   await app.listen(port);
-  console.log(`AI Service running on port ${port}`);
+  logger.log(`AI Service running on port ${port}`);
 }
 
 bootstrap();

@@ -1,9 +1,23 @@
 import { Controller, Inject } from '@nestjs/common';
 import { GrpcMethod, RpcException } from '@nestjs/microservices';
 import { Metadata, status } from '@grpc/grpc-js';
-import { IdentityServiceController, LoginRequest, LoginResponse, GetGameAccountRequest, GameAccountReply, SendMailRequest, SendMailResponse } from '@libs/rpc';
+import {
+  IdentityServiceController,
+  LoginRequest,
+  LoginResponse,
+  RegisterRequest,
+  RegisterResponse,
+  GetGameAccountRequest,
+  GameAccountReply,
+  SendMailRequest,
+  SendMailResponse,
+} from '@libs/rpc';
 import { LoginUseCase } from '../application/login.use-case';
-import { IGameAccountRepository, GameAccountRepository } from '../domain/repository/game-account.repository';
+import { RegisterUseCase } from '../application/register.use-case';
+import {
+  IGameAccountRepository,
+  GameAccountRepository,
+} from '../domain/repository/game-account.repository';
 import { IMailRepository } from '../../mail/domain/repository/mail.repository';
 import { IdentityGrpcMapper } from './identity.grpc-mapper';
 
@@ -11,6 +25,7 @@ import { IdentityGrpcMapper } from './identity.grpc-mapper';
 export class IdentityGrpcController implements IdentityServiceController {
   constructor(
     private readonly loginUseCase: LoginUseCase,
+    private readonly registerUseCase: RegisterUseCase,
     @Inject(GameAccountRepository)
     private readonly gameAccountRepository: IGameAccountRepository,
     @Inject(IMailRepository)
@@ -25,6 +40,16 @@ export class IdentityGrpcController implements IdentityServiceController {
     const command = IdentityGrpcMapper.toLoginCommand(request);
     const account = await this.loginUseCase.execute(command);
     return IdentityGrpcMapper.toLoginResponse(account);
+  }
+
+  @GrpcMethod('IdentityService', 'Register')
+  async register(
+    request: RegisterRequest,
+    _metadata: Metadata,
+  ): Promise<RegisterResponse> {
+    const command = IdentityGrpcMapper.toRegisterCommand(request);
+    const account = await this.registerUseCase.execute(command);
+    return IdentityGrpcMapper.toRegisterResponse(account);
   }
 
   @GrpcMethod('IdentityService', 'GetGameAccount')

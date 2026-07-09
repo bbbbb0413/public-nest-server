@@ -6,6 +6,13 @@ import { AuthenticatedRedisIoAdapter } from '@libs/common/adapter/authenticated-
 async function server(): Promise<void> {
   const app = await NestFactory.create(GatewayModule);
 
+  app.enableCors({
+    origin: process.env.ALLOWED_ORIGINS?.split(',') ?? [
+      'http://localhost:5175',
+    ],
+    credentials: true,
+  });
+
   const redisIoAdapter = new AuthenticatedRedisIoAdapter(app);
   await redisIoAdapter.connectToRedis();
   app.useWebSocketAdapter(redisIoAdapter);

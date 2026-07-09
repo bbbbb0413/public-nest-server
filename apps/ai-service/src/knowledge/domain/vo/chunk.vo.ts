@@ -4,6 +4,8 @@ interface ChunkValue {
   text: string;
   index: number;
   documentId: string;
+  charCount?: number;
+  parentChunkId?: string;
 }
 
 export class Chunk extends ValueObject<ChunkValue> {
@@ -13,8 +15,13 @@ export class Chunk extends ValueObject<ChunkValue> {
     if (value.index < 0) throw new Error('청크 인덱스는 0 이상이어야 합니다.');
   }
 
-  static of(text: string, index: number, documentId: string): Chunk {
-    return new Chunk({ text, index, documentId });
+  static of(
+    text: string,
+    index: number,
+    documentId: string,
+    opts?: { charCount?: number; parentChunkId?: string },
+  ): Chunk {
+    return new Chunk({ text, index, documentId, ...opts });
   }
 
   getText(): string {
@@ -25,5 +32,11 @@ export class Chunk extends ValueObject<ChunkValue> {
   }
   getDocumentId(): string {
     return this.getValue().documentId;
+  }
+  getCharCount(): number | undefined {
+    return this.getValue().charCount;
+  }
+  getParentChunkId(): string | undefined {
+    return this.getValue().parentChunkId;
   }
 }

@@ -6,6 +6,14 @@ import { getGrpcOptions, GRPC_PACKAGES } from '@libs/rpc';
 
 async function server(): Promise<void> {
   const app = await NestFactory.create(IdentityModule);
+
+  app.enableCors({
+    origin: process.env.ALLOWED_ORIGINS?.split(',') ?? [
+      'http://localhost:5175',
+    ],
+    credentials: true,
+  });
+
   const redisIoAdapter = new AuthenticatedRedisIoAdapter(app);
   await redisIoAdapter.connectToRedis();
 

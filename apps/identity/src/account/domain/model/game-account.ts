@@ -12,11 +12,11 @@ export class GameAccount extends AggregateRoot {
     super();
   }
 
-  static create(props: { uuid: string }): GameAccount {
+  static create(props: { uuid: string; nickName?: string }): GameAccount {
     const account = new GameAccount(
       undefined,
       Uuid.of(props.uuid),
-      NickName.empty(),
+      props.nickName ? NickName.of(props.nickName) : NickName.empty(),
     );
     account.addDomainEvent(new GameAccountCreatedEvent(undefined, props.uuid));
     return account;

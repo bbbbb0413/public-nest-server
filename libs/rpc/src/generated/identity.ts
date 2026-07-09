@@ -11,6 +11,16 @@ export interface LoginResponse {
   nickName: string;
 }
 
+export interface RegisterRequest {
+  nickName?: string;
+}
+
+export interface RegisterResponse {
+  id: number;
+  uuid: string;
+  nickName: string;
+}
+
 export interface GetGameAccountRequest {
   uuid: string;
 }
@@ -34,8 +44,18 @@ export interface SendMailResponse {
 
 export interface IdentityServiceClient {
   login(request: LoginRequest, metadata?: Metadata): Observable<LoginResponse>;
-  getGameAccount(request: GetGameAccountRequest, metadata?: Metadata): Observable<GameAccountReply>;
-  sendMail(request: SendMailRequest, metadata?: Metadata): Observable<SendMailResponse>;
+  register(
+    request: RegisterRequest,
+    metadata?: Metadata,
+  ): Observable<RegisterResponse>;
+  getGameAccount(
+    request: GetGameAccountRequest,
+    metadata?: Metadata,
+  ): Observable<GameAccountReply>;
+  sendMail(
+    request: SendMailRequest,
+    metadata?: Metadata,
+  ): Observable<SendMailResponse>;
 }
 
 export interface IdentityServiceController {
@@ -44,13 +64,27 @@ export interface IdentityServiceController {
     metadata: Metadata,
   ): Promise<LoginResponse> | Observable<LoginResponse> | LoginResponse;
 
+  register(
+    request: RegisterRequest,
+    metadata: Metadata,
+  ):
+    | Promise<RegisterResponse>
+    | Observable<RegisterResponse>
+    | RegisterResponse;
+
   getGameAccount(
     request: GetGameAccountRequest,
     metadata: Metadata,
-  ): Promise<GameAccountReply> | Observable<GameAccountReply> | GameAccountReply;
+  ):
+    | Promise<GameAccountReply>
+    | Observable<GameAccountReply>
+    | GameAccountReply;
 
   sendMail(
     request: SendMailRequest,
     metadata: Metadata,
-  ): Promise<SendMailResponse> | Observable<SendMailResponse> | SendMailResponse;
+  ):
+    | Promise<SendMailResponse>
+    | Observable<SendMailResponse>
+    | SendMailResponse;
 }

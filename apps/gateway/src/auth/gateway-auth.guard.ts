@@ -1,4 +1,9 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Reflector } from '@nestjs/core';
 import { Session } from '@libs/shared-kernel';
@@ -60,9 +65,9 @@ export class GatewayAuthGuard implements CanActivate {
       request.session = user as Session;
     } else if (authType === 'jwt') {
       request.session = Session.create({
-        uuid: String(user.id),
-        nickName: user.name,
-        gameDbId: user.id,
+        uuid: user.uuid ?? String(user.id),
+        nickName: user.nickName ?? user.name,
+        gameDbId: user.id ?? 0,
         database: 'game_db',
       });
     } else if (authType === 'apikey') {
