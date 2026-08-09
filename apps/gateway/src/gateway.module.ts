@@ -10,6 +10,7 @@ import { IdentityGatewayController } from './identity/identity-gateway.controlle
 import { ChatGateway } from './chat/chat-gateway.gateway';
 import PersonalDatabaseConfig from '@libs/common/config/database/personal-database.config';
 import { GatewayConfigModule } from './config/gateway-config.module';
+import { AiGatewayModule } from './ai/ai-gateway.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { GatewayConfigModule } from './config/gateway-config.module';
 
     AuthModule,
     GrpcClientsModule,
+    AiGatewayModule,
   ],
   controllers: [PaymentGatewayController, IdentityGatewayController],
   providers: [ChatGateway],

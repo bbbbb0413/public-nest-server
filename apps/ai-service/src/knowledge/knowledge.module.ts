@@ -58,11 +58,14 @@ import { AdminApiKeyGuard } from './presentation/guard/admin-api-key.guard';
     {
       provide: VectorStorePort,
       inject: ['MONGO_CLIENT', ConfigService],
-      useFactory: (client: MongoClient, config: ConfigService) =>
-        new MongoDBVectorAdapter(
+      useFactory: async (client: MongoClient, config: ConfigService) => {
+        const adapter = new MongoDBVectorAdapter(
           client,
           config.get('MONGODB_DB_NAME', 'ai_service'),
-        ),
+        );
+        await adapter.ensureVectorIndex();
+        return adapter;
+      },
     },
   ],
   exports: ['MONGO_CLIENT', VectorStorePort],

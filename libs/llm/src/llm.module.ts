@@ -9,6 +9,7 @@ import { GeminiProvider } from './infrastructure/gemini/gemini.provider';
 import { GroqProvider } from './infrastructure/groq/groq.provider';
 import { OllamaProvider } from './infrastructure/ollama/ollama.provider';
 import { OllamaEmbeddingProvider } from './infrastructure/ollama/ollama-embedding.provider';
+import { GroqEmbeddingProvider } from './infrastructure/groq/groq-embedding.provider';
 
 export type LlmProviderType =
   | 'claude'
@@ -16,7 +17,7 @@ export type LlmProviderType =
   | 'gemini'
   | 'groq'
   | 'ollama';
-export type EmbeddingProviderType = 'openai' | 'ollama';
+export type EmbeddingProviderType = 'openai' | 'ollama' | 'groq';
 
 @Module({})
 export class LlmModule {
@@ -75,6 +76,12 @@ export class LlmModule {
               return new OllamaEmbeddingProvider(
                 config.get('OLLAMA_BASE_URL', 'http://localhost:11434'),
                 config.get('OLLAMA_EMBEDDING_MODEL', 'nomic-embed-text'),
+              );
+            }
+            if (embProvider === 'groq') {
+              return new GroqEmbeddingProvider(
+                config.getOrThrow('GROQ_API_KEY'),
+                config.get('GROQ_EMBEDDING_MODEL', 'nomic-embed-text-v1.5'),
               );
             }
             return new OpenAIEmbeddingProvider(

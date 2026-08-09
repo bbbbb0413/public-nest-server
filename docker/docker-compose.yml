@@ -205,7 +205,8 @@ services:
                         # Ollama는 호스트에서 실행 (Metal GPU 가속)
                         OLLAMA_BASE_URL: http://host.docker.internal:11434
                         OLLAMA_MODEL: ${OLLAMA_MODEL:-phi4:14b}
-                        OLLAMA_EMBEDDING_MODEL: ${OLLAMA_EMBEDDING_MODEL:-bge-m3}
+                        OLLAMA_EMBEDDING_MODEL: ${OLLAMA_EMBEDDING_MODEL:-qwen3-embedding:4b}
+                        EMBEDDING_DIMENSION: ${EMBEDDING_DIMENSION:-2560}
                         LLM_FALLBACK_CHAIN: ${LLM_FALLBACK_CHAIN:-${OLLAMA_MODEL:-phi4:14b}}
 
                         # 클라우드 LLM (선택)
@@ -213,6 +214,7 @@ services:
                         OPENAI_API_KEY: ${OPENAI_API_KEY:-}
                         GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
                         GROQ_API_KEY: ${GROQ_API_KEY:-}
+                        GROQ_MODEL: ${GROQ_MODEL:-llama-3.3-70b-versatile}
 
                         REDIS_DB_HOST: redis
                         REDIS_DB_PORT: 6379

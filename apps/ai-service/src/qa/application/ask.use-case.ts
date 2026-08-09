@@ -159,7 +159,9 @@ export class AskUseCase {
       RAG_PROMPT_NAME,
       tenant,
     );
-    for await (const token of this.llmGateway.stream(gatewayCommand)) {
+    for await (const token of this.streamFiltered(
+      this.llmGateway.stream(gatewayCommand),
+    )) {
       collected.push(token);
       yield token;
     }
@@ -191,6 +193,45 @@ export class AskUseCase {
 
   private *streamFromString(text: string): Iterable<string> {
     yield text;
+  }
+
+  private async *streamFiltered(
+    source: AsyncIterable<string>,
+  ): AsyncIterable<string> {
+    let lineBuffer = '';
+    let consecutiveBlanks = 0;
+
+    const isFilteredLine = (line: string): boolean =>
+      /^#{1,3}\s*Step\s*\d+/i.test(line) ||
+      /^\*{0,2}\s*Step\s*\d+\**[:\)]/i.test(line) ||
+      /^The final answer is/i.test(line) ||
+      /^In conclusion[,:\s]/i.test(line) ||
+      /^To summarize[,:\s]/i.test(line) ||
+      /^결론\s*[:\s]/i.test(line) ||
+      /^최종\s*답변\s*[:\s]/i.test(line) ||
+      /\$\\boxed\{/.test(line) ||
+      /\\boxed\{/.test(line);
+
+    for await (const token of source) {
+      lineBuffer += token;
+      const lines = lineBuffer.split('\n');
+      lineBuffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        if (isFilteredLine(line)) continue;
+        if (line.trim() === '') {
+          consecutiveBlanks++;
+          if (consecutiveBlanks <= 1) yield '\n';
+        } else {
+          consecutiveBlanks = 0;
+          yield line + '\n';
+        }
+      }
+    }
+
+    if (lineBuffer && !isFilteredLine(lineBuffer)) {
+      yield lineBuffer;
+    }
   }
 
   private async buildRagMessages(

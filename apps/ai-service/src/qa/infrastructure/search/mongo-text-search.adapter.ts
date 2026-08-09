@@ -9,6 +9,8 @@ interface ChunkRecord {
   documentId: string;
   fileName: string;
   chunkIndex: number;
+  parentChunkId?: string;
+  parentText?: string;
 }
 
 @Injectable()
@@ -43,6 +45,8 @@ export class MongoTextSearchAdapter
         documentId: 1,
         fileName: 1,
         chunkIndex: 1,
+        parentChunkId: 1,
+        parentText: 1,
         score: { $meta: 'textScore' },
       })
       .sort({ score: { $meta: 'textScore' } })
@@ -56,6 +60,8 @@ export class MongoTextSearchAdapter
         documentId: r.documentId,
         fileName: r.fileName,
         chunkIndex: r.chunkIndex,
+        ...(r.parentChunkId && { parentChunkId: r.parentChunkId }),
+        ...(r.parentText && { parentText: r.parentText }),
       },
     }));
   }

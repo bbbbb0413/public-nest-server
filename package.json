@@ -97,6 +97,7 @@
     "ioredis": "^5.11.0",
     "joi-password-complexity": "^5.2.0",
     "jsonwebtoken": "^9.0.3",
+    "kafkajs": "^2.2.4",
     "langchain": "^1.4.4",
     "langsmith": "^0.7.10",
     "mongodb": "^7.2.0",

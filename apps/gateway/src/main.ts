@@ -8,6 +8,7 @@ async function server(): Promise<void> {
 
   app.enableCors({
     origin: process.env.ALLOWED_ORIGINS?.split(',') ?? [
+      'http://localhost:5173',
       'http://localhost:5175',
     ],
     credentials: true,

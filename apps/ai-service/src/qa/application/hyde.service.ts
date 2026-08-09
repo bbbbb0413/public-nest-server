@@ -10,10 +10,18 @@ export class HydeService {
     @Inject(LlmProvider) private readonly llmProvider: ILlmProvider,
   ) {}
 
+  private getWordCount(text: string): number {
+    const spaceWords = text.trim().split(/\s+/).length;
+    if (spaceWords === 1) {
+      return Math.ceil(text.replace(/\s/g, '').length / 3);
+    }
+    return spaceWords;
+  }
+
   shouldApply(question: string): boolean {
     const trimmed = question.trim();
     if (!trimmed) return false;
-    const wordCount = trimmed.split(/\s+/).length;
+    const wordCount = this.getWordCount(trimmed);
     return wordCount >= MIN_QUERY_WORDS && wordCount <= MAX_QUERY_WORDS;
   }
 

@@ -1,12 +1,11 @@
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
-import { InternalServerErrorException } from '@nestjs/common';
-import { AxiosRequestHeaders } from 'axios';
+import { HttpException, InternalServerErrorException } from '@nestjs/common';
+import { AxiosError, AxiosRequestHeaders } from 'axios';
 
 export abstract class BaseHttpService {
   protected headers?: AxiosRequestHeaders;
   protected baseUrl: string;
-  protected data?: any;
 
   protected constructor(
     protected readonly httpService: HttpService,
@@ -18,14 +17,13 @@ export abstract class BaseHttpService {
 
   async post(options: { method: string; data?: any }): Promise<any> {
     const url = `${this.baseUrl}/${options.method}`;
-    this.data = options.data ? JSON.stringify(options.data) : undefined;
     try {
       const response = await firstValueFrom(
-        this.httpService.post(url, this?.data, { headers: this.headers }),
+        this.httpService.post(url, options.data, { headers: this.headers }),
       );
       return response.data;
-    } catch (e) {
-      throw new InternalServerErrorException(e.status, e.statusText);
+    } catch (e: unknown) {
+      throw this.toHttpException(e);
     }
   }
 
@@ -42,8 +40,41 @@ export abstract class BaseHttpService {
         }),
       );
       return response.data;
-    } catch (e) {
-      throw new InternalServerErrorException(e.status, e.statusText);
+    } catch (e: unknown) {
+      throw this.toHttpException(e);
     }
+  }
+
+  async patch(options: { method: string; data?: any }): Promise<any> {
+    const url = `${this.baseUrl}/${options.method}`;
+    try {
+      const response = await firstValueFrom(
+        this.httpService.patch(url, options.data, { headers: this.headers }),
+      );
+      return response.data;
+    } catch (e: unknown) {
+      throw this.toHttpException(e);
+    }
+  }
+
+  async delete(options: { method: string }): Promise<any> {
+    const url = `${this.baseUrl}/${options.method}`;
+    try {
+      const response = await firstValueFrom(
+        this.httpService.delete(url, { headers: this.headers }),
+      );
+      return response.data;
+    } catch (e: unknown) {
+      throw this.toHttpException(e);
+    }
+  }
+
+  private toHttpException(e: unknown): HttpException {
+    if (e instanceof AxiosError && e.response) {
+      const body = e.response.data ?? e.message;
+      return new HttpException(body, e.response.status);
+    }
+    const message = e instanceof Error ? e.message : 'Unknown error';
+    return new InternalServerErrorException(message);
   }
 }

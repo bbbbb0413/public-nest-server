@@ -1,10 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Collection, MongoClient } from 'mongodb';
 import {
   IVectorStorePort,
   VectorDocument,
   SimilaritySearchResult,
 } from '../../domain/port/vector-store.port';
+
+const VECTOR_INDEX_NAME = 'knowledge_vector_index';
 
 interface VectorRecord {
   id: string;
@@ -21,11 +23,66 @@ interface VectorRecord {
 @Injectable()
 export class MongoDBVectorAdapter implements IVectorStorePort {
   private readonly collection: Collection<VectorRecord>;
+  private readonly logger = new Logger(MongoDBVectorAdapter.name);
 
   constructor(client: MongoClient, dbName: string) {
     this.collection = client
       .db(dbName)
       .collection<VectorRecord>('knowledge_chunks');
+  }
+
+  async ensureVectorIndex(): Promise<void> {
+    try {
+      const dimResult = await this.collection
+        .aggregate<{ dim: number }>([
+          { $limit: 1 },
+          { $project: { dim: { $size: '$embedding' } } },
+        ])
+        .next();
+
+      if (!dimResult) {
+        this.logger.log('컬렉션이 비어 있어 벡터 인덱스 생성을 건너뜁니다');
+        return;
+      }
+
+      const numDimensions = dimResult.dim;
+      const indexes = await this.collection
+        .aggregate<{ name: string; latestDefinition?: { fields?: Array<{ numDimensions?: number }> } }>([
+          { $listSearchIndexes: {} },
+        ])
+        .toArray();
+
+      const existing = indexes.find((idx) => idx.name === VECTOR_INDEX_NAME);
+
+      if (existing) {
+        const existingDim = existing.latestDefinition?.fields?.[0]?.numDimensions;
+        if (existingDim === numDimensions) {
+          this.logger.log(`벡터 인덱스 확인 완료 (${numDimensions}차원)`);
+          return;
+        }
+        this.logger.warn(
+          `차원 불일치: 인덱스=${existingDim}, 데이터=${numDimensions} — 인덱스를 재생성합니다`,
+        );
+        await this.collection.dropSearchIndex(VECTOR_INDEX_NAME);
+        await new Promise<void>((r) => setTimeout(r, 2000));
+      }
+
+      await (this.collection.createSearchIndex as (def: object) => Promise<string>)({
+        name: VECTOR_INDEX_NAME,
+        type: 'vectorSearch',
+        definition: {
+          fields: [
+            { type: 'vector', path: 'embedding', numDimensions, similarity: 'cosine' },
+          ],
+        },
+      });
+
+      this.logger.log(`벡터 인덱스 생성 완료 (${numDimensions}차원)`);
+    } catch (e: unknown) {
+      this.logger.warn(
+        `벡터 인덱스 보장 실패: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
   }
 
   async upsert(documents: VectorDocument[]): Promise<void> {

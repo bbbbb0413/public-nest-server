@@ -100,10 +100,22 @@ export class AgenticAskUseCase {
     history?: Array<{ role: 'user' | 'assistant'; content: string }>,
   ): Promise<LlmMessage[]> {
     const safeChunks = this.ragValidator.sanitize(chunks);
-    const context = safeChunks
+
+    const seenParents = new Map<string, SimilaritySearchResult>();
+    for (const c of safeChunks) {
+      const key =
+        c.metadata.parentChunkId ??
+        `${c.metadata.documentId}:${c.metadata.chunkIndex}`;
+      if (!seenParents.has(key)) {
+        seenParents.set(key, c);
+      }
+    }
+    const deduped = [...seenParents.values()];
+
+    const context = deduped
       .map(
         (c, i) =>
-          `[출처 ${i + 1}: ${c.metadata.fileName} (섹션 ${c.metadata.chunkIndex + 1})]\n${c.text}`,
+          `[출처 ${i + 1}: ${c.metadata.fileName} (섹션 ${c.metadata.chunkIndex + 1})]\n${c.metadata.parentText ?? c.text}`,
       )
       .join('\n\n');
 

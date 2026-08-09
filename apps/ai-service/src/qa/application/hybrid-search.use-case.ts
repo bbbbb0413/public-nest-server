@@ -123,16 +123,31 @@ export class HybridSearchUseCase {
 
     if (parentChunkIds.length === 0) return chunks;
 
+    const hitIndices = new Map<string, number>();
+    for (const c of chunks) {
+      if (c.metadata.parentChunkId) {
+        hitIndices.set(c.metadata.parentChunkId, c.metadata.chunkIndex);
+      }
+    }
+
     const siblings =
       await this.vectorStore.findByParentChunkIds(parentChunkIds);
 
     const existingKeys = new Set(
       chunks.map((c) => `${c.metadata.documentId}:${c.metadata.chunkIndex}`),
     );
-    const newSiblings = siblings.filter(
-      (s) =>
-        !existingKeys.has(`${s.metadata.documentId}:${s.metadata.chunkIndex}`),
-    );
+    const newSiblings = siblings.filter((s) => {
+      if (
+        existingKeys.has(`${s.metadata.documentId}:${s.metadata.chunkIndex}`)
+      ) {
+        return false;
+      }
+      const parentId = s.metadata.parentChunkId;
+      if (!parentId) return false;
+      const hitIdx = hitIndices.get(parentId);
+      if (hitIdx === undefined) return false;
+      return Math.abs(s.metadata.chunkIndex - hitIdx) <= 1;
+    });
 
     return [...chunks, ...newSiblings];
   }

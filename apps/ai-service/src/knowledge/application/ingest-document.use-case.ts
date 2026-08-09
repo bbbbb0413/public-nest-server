@@ -23,24 +23,43 @@ import {
 import { IngestDocumentCommand } from './ingest-document.command';
 import { RagContentValidator } from '../../qa/application/filter/rag-content-validator';
 
-const KOREAN_SENTENCE_ENDINGS = ['다. ', '요. ', '까. ', '죠. ', '나. '];
+const KOREAN_SENTENCE_ENDINGS = [
+  '다. ',
+  '요. ',
+  '까. ',
+  '죠. ',
+  '나. ',
+  '데. ',
+  '네. ',
+  '군. ',
+  '음. ',
+  '지. ',
+  '야. ',
+  '아. ',
+  '어. ',
+  '고. ',
+  '며. ',
+  '고요. ',
+  '네요. ',
+  '데요. ',
+];
 
 @Injectable()
 export class IngestDocumentUseCase {
   private readonly logger = new Logger(IngestDocumentUseCase.name);
   private readonly contextualEmbeddingsEnabled: boolean;
 
-  // Parent chunks (1024자) — LLM 컨텍스트 전달용
+  // Parent chunks (1536자) — LLM 컨텍스트 전달용
   private readonly parentSplitter = new RecursiveCharacterTextSplitter({
-    chunkSize: 1024,
-    chunkOverlap: 200,
+    chunkSize: 1536,
+    chunkOverlap: 300,
     separators: ['\f', '\n\n', '\n', ...KOREAN_SENTENCE_ENDINGS, ' ', ''],
   });
 
-  // Child chunks (256자) — 벡터 검색용 (정밀 매칭)
+  // Child chunks (512자) — 벡터 검색용 (정밀 매칭)
   private readonly childSplitter = new RecursiveCharacterTextSplitter({
-    chunkSize: 256,
-    chunkOverlap: 50,
+    chunkSize: 512,
+    chunkOverlap: 100,
     separators: ['\n\n', '\n', ...KOREAN_SENTENCE_ENDINGS, ' ', ''],
   });
 
@@ -114,13 +133,19 @@ export class IngestDocumentUseCase {
     documentId: string,
     fileName: string,
   ): Promise<VectorDocument[]> {
-    const parentTexts = await this.parentSplitter.splitText(rawText);
+    const parentTexts = await this.splitByParagraphFirst(rawText);
+    const parentOffsets = this.computeChunkOffsets(rawText, parentTexts);
 
     // 각 parent에 대해 contextual prefix 생성 (활성화 시 병렬 처리)
     const contextPrefixes = this.contextualEmbeddingsEnabled
       ? await Promise.all(
-          parentTexts.map((pt) =>
-            this.generateContextualPrefix(fileName, rawText, pt),
+          parentTexts.map((pt, i) =>
+            this.generateContextualPrefix(
+              fileName,
+              rawText,
+              pt,
+              parentOffsets[i],
+            ),
           ),
         )
       : parentTexts.map(() => '');
@@ -179,20 +204,29 @@ export class IngestDocumentUseCase {
     docTitle: string,
     fullText: string,
     chunkText: string,
+    chunkOffset: number,
   ): Promise<string> {
-    const docSample = fullText.substring(0, 400);
-    const chunkSample = chunkText.substring(0, 200);
+    const contextStart = Math.max(0, chunkOffset - 300);
+    const contextEnd = Math.min(
+      fullText.length,
+      chunkOffset + chunkText.length + 100,
+    );
+    const localContext = fullText.substring(contextStart, contextEnd);
+
+    const mid = Math.floor(fullText.length / 2);
+    const docSample = `${fullText.substring(0, 200)}\n...\n${fullText.substring(mid, mid + 200)}`;
+
     const messages = [
       {
         role: 'user' as const,
         content: `<document>
 제목: ${docTitle}
-앞부분: ${docSample}
+대표 내용: ${docSample}
 </document>
 
 위 문서에서 아래 청크의 핵심 내용을 1문장으로 설명하세요. 설명 문장만 출력하세요.
 
-<chunk>${chunkSample}</chunk>`,
+<chunk>${localContext}</chunk>`,
       },
     ];
 
@@ -201,6 +235,49 @@ export class IngestDocumentUseCase {
       tokens.push(token);
     }
     return tokens.join('').trim();
+  }
+
+  private async splitByParagraphFirst(text: string): Promise<string[]> {
+    const segments = text.split(/\f|\n\n/).filter((s) => s.trim().length > 0);
+    const coarseChunks: string[] = [];
+    let current = '';
+
+    for (const seg of segments) {
+      const joined = current ? `${current}\n\n${seg}` : seg;
+      if (joined.length > 1536 && current) {
+        coarseChunks.push(current.trim());
+        current = seg;
+      } else {
+        current = joined;
+      }
+    }
+    if (current) coarseChunks.push(current.trim());
+
+    const result: string[] = [];
+    for (const chunk of coarseChunks) {
+      if (chunk.length > 1536) {
+        const subChunks = await this.parentSplitter.splitText(chunk);
+        result.push(...subChunks);
+      } else {
+        result.push(chunk);
+      }
+    }
+    return result.length > 0
+      ? result
+      : await this.parentSplitter.splitText(text);
+  }
+
+  private computeChunkOffsets(fullText: string, chunks: string[]): number[] {
+    const offsets: number[] = [];
+    let searchStart = 0;
+    for (const chunk of chunks) {
+      const probe = chunk.substring(0, 50);
+      const idx = fullText.indexOf(probe, searchStart);
+      const offset = idx === -1 ? searchStart : idx;
+      offsets.push(offset);
+      if (idx !== -1) searchStart = idx + chunk.length;
+    }
+    return offsets;
   }
 
   private async extractText(buffer: Buffer, mimeType: string): Promise<string> {
