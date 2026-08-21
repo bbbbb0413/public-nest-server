@@ -4,7 +4,7 @@ import { Redis } from 'ioredis';
 import { RedisFactory } from '@libs/common/databases/redis/redis.factory';
 
 export type AiJobType = 'rag.ask' | 'knowledge.ingest';
-export type AiJobStatus = 'queued' | 'processing' | 'done' | 'error';
+export type AiJobStatus = 'queued' | 'processing' | 'done' | 'error' | 'cancelled';
 
 export interface AiJobMeta {
   jobId: string;
@@ -48,7 +48,19 @@ export class JobStoreService implements OnModuleDestroy {
     return raw as unknown as AiJobMeta;
   }
 
+  async cancelJob(jobId: string): Promise<void> {
+    const key = this.jobKey(jobId);
+    await this.redis.hset(key, 'status', 'cancelled');
+    await this.redis.hset(key, 'cancelled', 'true');
+    await this.redis.expire(key, JOB_TTL_SECONDS);
+    await this.redis.set(this.cancelKey(jobId), '1', 'EX', JOB_TTL_SECONDS);
+  }
+
   private jobKey(jobId: string): string {
     return `job:${jobId}`;
+  }
+
+  private cancelKey(jobId: string): string {
+    return `job:${jobId}:cancelled`;
   }
 }
