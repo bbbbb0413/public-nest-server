@@ -99,6 +99,51 @@ describe('JobController', () => {
       expect(mockJobStore.cancelJob).toHaveBeenCalledWith('job-123');
     });
 
+    it('성공 시: /ai/rag/jobs/:jobId 경로로도 취소 성공 및 200 반환', async () => {
+      mockJobStore.getJob.mockResolvedValue({
+        jobId: 'job-123',
+        userId: 'user-uuid-123',
+        type: 'rag.ask',
+        status: 'processing',
+        createdAt: new Date().toISOString(),
+      });
+
+      const res = await request(app.getHttpServer()).delete('/ai/rag/jobs/job-123');
+
+      expect(res.status).toBe(200);
+      expect(mockJobStore.cancelJob).toHaveBeenCalledWith('job-123');
+    });
+
+    it('성공 시: status가 error인 잡도 오류 없이 200 반환하며 cancelJob을 호출하지 않음', async () => {
+      mockJobStore.getJob.mockResolvedValue({
+        jobId: 'job-err',
+        userId: 'user-uuid-123',
+        type: 'rag.ask',
+        status: 'error',
+        createdAt: new Date().toISOString(),
+      });
+
+      const res = await request(app.getHttpServer()).delete('/ai/jobs/job-err');
+
+      expect(res.status).toBe(200);
+      expect(mockJobStore.cancelJob).not.toHaveBeenCalled();
+    });
+
+    it('성공 시: 이미 cancelled된 잡인 경우 오류 없이 200 반환하며 cancelJob을 중복 호출하지 않음', async () => {
+      mockJobStore.getJob.mockResolvedValue({
+        jobId: 'job-cancelled',
+        userId: 'user-uuid-123',
+        type: 'rag.ask',
+        status: 'cancelled',
+        createdAt: new Date().toISOString(),
+      });
+
+      const res = await request(app.getHttpServer()).delete('/ai/jobs/job-cancelled');
+
+      expect(res.status).toBe(200);
+      expect(mockJobStore.cancelJob).not.toHaveBeenCalled();
+    });
+
     it('에러 시: 다른 사용자의 잡인 경우 403 Forbidden 반환', async () => {
       mockJobStore.getJob.mockResolvedValue({
         jobId: 'job-other',
