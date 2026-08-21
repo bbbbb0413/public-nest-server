@@ -1,3 +1,4 @@
+/// <reference types="multer" />
 import {
   BadRequestException,
   Controller,
@@ -5,6 +6,7 @@ import {
   Post,
   Req,
   UploadedFile,
+  UseFilters,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -22,6 +24,7 @@ import { AiKafkaProducerService } from '../kafka/ai-kafka-producer.service';
 import { JobStoreService } from '../job/job-store.service';
 import { JobAcceptedOutDto } from '../job/dto/job-accepted-out.dto';
 import { KnowledgeFileStagingService } from './knowledge-file-staging.service';
+import { KnowledgeUploadExceptionFilter } from './knowledge-upload-exception.filter';
 
 interface AuthenticatedRequest extends Request {
   session: Session;
@@ -33,6 +36,7 @@ const ALLOWED_MIME_TYPES = ['text/plain', 'application/pdf', 'text/markdown'];
 @ApiTags('ai')
 @ApiBearerAuth('jwt')
 @UseGuards(GatewayAuthGuard)
+@UseFilters(KnowledgeUploadExceptionFilter)
 @Controller('ai/knowledge/jobs')
 export class KnowledgeJobController {
   constructor(
@@ -51,7 +55,15 @@ export class KnowledgeJobController {
     FileInterceptor('file', {
       limits: { fileSize: MAX_FILE_SIZE_BYTES },
       fileFilter: (_req, file, cb) => {
-        cb(null, ALLOWED_MIME_TYPES.includes(file.mimetype));
+        if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+          return cb(
+            new BadRequestException(
+              '지원하지 않는 파일 형식입니다. (TXT, PDF, MD 파일만 지원)',
+            ),
+            false,
+          );
+        }
+        cb(null, true);
       },
     }),
   )
@@ -60,9 +72,7 @@ export class KnowledgeJobController {
     @UploadedFile() file?: Express.Multer.File,
   ): Promise<JobAcceptedOutDto> {
     if (!file) {
-      throw new BadRequestException(
-        '허용되지 않는 파일이거나 파일이 누락되었습니다.',
-      );
+      throw new BadRequestException('업로드할 파일이 누락되었습니다.');
     }
 
     const fileName = Buffer.from(file.originalname, 'latin1').toString('utf8');
