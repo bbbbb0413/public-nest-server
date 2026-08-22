@@ -1,4 +1,14 @@
-import { Body, Controller, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  ForbiddenException,
+  HttpCode,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { Session } from '@libs/shared-kernel';
@@ -15,14 +25,14 @@ interface AuthenticatedRequest extends Request {
 @ApiTags('ai')
 @ApiBearerAuth('jwt')
 @UseGuards(GatewayAuthGuard)
-@Controller('ai/rag/jobs')
+@Controller('ai')
 export class JobController {
   constructor(
     private readonly jobStore: JobStoreService,
     private readonly producer: AiKafkaProducerService,
   ) {}
 
-  @Post()
+  @Post('rag/jobs')
   @HttpCode(202)
   @ApiOperation({
     summary: 'RAG 질의응답 잡 발행 (Kafka 비동기 처리, 결과는 SSE로 수신)',
@@ -45,5 +55,30 @@ export class JobController {
     });
 
     return { jobId: job.jobId };
+  }
+
+  @Delete(['jobs/:jobId', 'rag/jobs/:jobId'])
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'AI 잡 생성 중단 요청',
+  })
+  async cancelJob(
+    @Req() req: AuthenticatedRequest,
+    @Param('jobId') jobId: string,
+  ): Promise<void> {
+    const job = await this.jobStore.getJob(jobId);
+    if (!job) {
+      return;
+    }
+
+    if (job.userId !== req.session.uuid) {
+      throw new ForbiddenException('본인이 발행한 잡만 취소할 수 있습니다.');
+    }
+
+    if (job.status === 'done' || job.status === 'error' || job.status === 'cancelled') {
+      return;
+    }
+
+    await this.jobStore.cancelJob(jobId);
   }
 }
