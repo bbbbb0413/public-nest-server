@@ -4,6 +4,12 @@ import { DataSourceOptions } from 'typeorm';
 import { ClsModule } from 'nestjs-cls';
 import { BullModule } from '@nestjs/bull';
 import { AuthModule } from '@libs/auth';
+import {
+  RedisClusterModule,
+  RedisChatZsetRepository,
+  ShardedPubSubService,
+  IPubSubPort,
+} from '@libs/rpc/chat-realtime';
 import { GrpcClientsModule } from './grpc-clients.module';
 import { PaymentGatewayController } from './payment/payment-gateway.controller';
 import { IdentityGatewayController } from './identity/identity-gateway.controller';
@@ -33,8 +39,19 @@ import { AiGatewayModule } from './ai/ai-gateway.module';
     AuthModule,
     GrpcClientsModule,
     AiGatewayModule,
+    RedisClusterModule,
   ],
   controllers: [PaymentGatewayController, IdentityGatewayController],
-  providers: [ChatGateway],
+  providers: [
+    ChatGateway,
+    ShardedPubSubService,
+    RedisChatZsetRepository,
+    { provide: IPubSubPort, useClass: ShardedPubSubService },
+    {
+      // chat-service의 SHARD_COUNT와 반드시 동일해야 pub/sub 채널이 맞물린다
+      provide: 'SHARD_COUNT',
+      useValue: 10,
+    },
+  ],
 })
 export class GatewayModule {}

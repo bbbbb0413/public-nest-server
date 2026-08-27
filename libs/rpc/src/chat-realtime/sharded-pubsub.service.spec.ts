@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ShardedPubSubService } from '../src/pubsub/sharded-pubsub.service';
-import { getChatShardChannel } from '../src/infrastructure/redis/chat.keys';
+import { ShardedPubSubService } from './sharded-pubsub.service';
+import { getChatShardChannel } from './chat.keys';
 
 describe('ShardedPubSubService', () => {
   let service: ShardedPubSubService;

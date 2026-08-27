@@ -1,14 +1,15 @@
 import { Module } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { RedisClusterModule } from './infrastructure/redis/redis-cluster.module';
-import { RedisChatZsetRepository } from './infrastructure/redis/redis-chat-zset.repository';
-import { ChatGateway } from './socket/chat.gateway';
-import { SocketConnectionService } from './socket/socket-connection.service';
+import {
+  RedisClusterModule,
+  RedisChatZsetRepository,
+  ShardedPubSubService,
+  IPubSubPort,
+} from '@libs/rpc/chat-realtime';
 import { MessageService } from './message/message.service';
-import { ShardedPubSubService } from './pubsub/sharded-pubsub.service';
+import { ChatNotifyListener } from './message/chat-notify.listener';
 import { ChatServerConfig } from './config/chat-server-config';
 import { IChatMessageStore } from './message/domain/port/chat-message-store.port';
-import { IPubSubPort } from './message/domain/port/pub-sub.port';
 import { ChatMessageStoreAdapter } from './message/infrastructure/chat-message-store.adapter';
 import { ChatGrpcController } from './message/rpc/chat.grpc-controller';
 
@@ -16,8 +17,8 @@ import { ChatGrpcController } from './message/rpc/chat.grpc-controller';
   imports: [ChatServerConfig, EventEmitterModule.forRoot(), RedisClusterModule],
   controllers: [ChatGrpcController],
   providers: [
-    SocketConnectionService,
     MessageService,
+    ChatNotifyListener,
     ShardedPubSubService,
     RedisChatZsetRepository,
     ChatMessageStoreAdapter,

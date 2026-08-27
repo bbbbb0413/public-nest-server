@@ -6,8 +6,8 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { Redis } from 'ioredis';
-import { getChatShardChannel } from '../infrastructure/redis/chat.keys';
-import { IPubSubPort } from '../message/domain/port/pub-sub.port';
+import { getChatShardChannel } from './chat.keys';
+import { IPubSubPort } from './pub-sub.port';
 
 @Injectable()
 export class ShardedPubSubService
@@ -26,8 +26,7 @@ export class ShardedPubSubService
   ) {}
 
   async onModuleInit() {
-    // 자동 구독은 SocketConnectionService에서 제어할 수도 있지만,
-    // 명세서에 따라 모든 샤드를 고정 구독합니다.
+    // 자동 구독은 호출 측(예: 소켓 게이트웨이)에서 제어합니다.
   }
 
   async onModuleDestroy() {

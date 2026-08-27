@@ -6,3 +6,5 @@ export * from './generated/auth';
 export * from './generated/identity';
 export * from './generated/payment';
 export * from './generated/chat';
+export * from './flatbuffers/builders';
+export * from './chat-realtime';

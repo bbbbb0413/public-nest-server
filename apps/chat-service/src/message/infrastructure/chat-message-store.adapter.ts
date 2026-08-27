@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { RedisChatZsetRepository } from '../../infrastructure/redis/redis-chat-zset.repository';
+import { RedisChatZsetRepository } from '@libs/rpc/chat-realtime';
 import { IChatMessageStore } from '../domain/port/chat-message-store.port';
 
 @Injectable()
