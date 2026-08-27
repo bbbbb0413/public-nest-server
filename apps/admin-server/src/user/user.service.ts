@@ -40,7 +40,10 @@ export class UserService {
   async isDuplicated(dto: SignupInput): Promise<void> {
     const count = await this.usersRepository.countByEmail(dto.email);
     if (count) {
-      throw new ServerErrorException(INTERNAL_ERROR_CODE.ERROR);
+      throw new ServerErrorException(
+        INTERNAL_ERROR_CODE.ERROR,
+        '이미 가입된 이메일입니다.',
+      );
     }
   }
 
@@ -49,13 +52,19 @@ export class UserService {
       dto.password,
     );
     if (result.error !== undefined) {
-      throw new ServerErrorException(INTERNAL_ERROR_CODE.ERROR);
+      throw new ServerErrorException(
+        INTERNAL_ERROR_CODE.ERROR,
+        '비밀번호는 10~30자이며 소문자/대문자/숫자/특수문자 중 4가지를 포함해야 합니다.',
+      );
     }
   }
 
   async signup(dto: SignupInput): Promise<UserOutDto> {
     if (dto.name.trim() === '') {
-      throw new ServerErrorException(INTERNAL_ERROR_CODE.ERROR);
+      throw new ServerErrorException(
+        INTERNAL_ERROR_CODE.ERROR,
+        '이름을 입력해주세요.',
+      );
     }
     await this.isDuplicated(dto);
     await this.isPasswordComplexity(dto);
@@ -93,10 +102,16 @@ export class UserService {
   async signIn(email: string, password: string): Promise<UserOutDto> {
     const user = await this.findUserByEmail(email);
     if (!(await user.checkPassword(password))) {
-      throw new ServerErrorException(INTERNAL_ERROR_CODE.ERROR);
+      throw new ServerErrorException(
+        INTERNAL_ERROR_CODE.ERROR,
+        '이메일 또는 비밀번호가 올바르지 않습니다.',
+      );
     }
     if (!user.activatedAt) {
-      throw new ServerErrorException(INTERNAL_ERROR_CODE.ERROR);
+      throw new ServerErrorException(
+        INTERNAL_ERROR_CODE.ERROR,
+        '아직 활성화되지 않은 계정입니다. 관리자에게 문의하세요.',
+      );
     }
     return UserOutDto.fromDomain(user);
   }
