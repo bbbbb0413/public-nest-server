@@ -31,7 +31,15 @@ import { SessionRepository } from './infrastructure/session/session.repository';
       [PersonalDatabaseConfig().name],
     ),
     SessionModule,
-    BullModule.registerQueue({ name: 'test' }),
+    BullModule.registerQueue({
+      name: 'mail',
+      defaultJobOptions: {
+        attempts: 5,
+        backoff: { type: 'exponential', delay: 10000 },
+        removeOnComplete: true,
+        removeOnFail: false,
+      },
+    }),
   ],
   controllers: [AuthController, UserController],
   providers: [

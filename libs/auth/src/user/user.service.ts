@@ -29,7 +29,7 @@ export class UserService {
   constructor(
     @Inject(IUsersRepository)
     private readonly usersRepository: IUsersRepository,
-    @InjectQueue('test') private readonly queue: Queue,
+    @InjectQueue('mail') private readonly queue: Queue,
   ) {}
 
   async isDuplicated(dto: AuthSignUserInDto): Promise<void> {
