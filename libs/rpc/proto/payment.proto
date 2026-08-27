@@ -11,6 +11,7 @@ message CreatePaymentRequest {
   int64  amount = 2;
   string currency = 3;
   string product_id = 4;
+  string idempotency_key = 5;
 }
 
 message GetPaymentRequest {

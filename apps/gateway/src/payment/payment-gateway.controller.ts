@@ -39,6 +39,7 @@ export class PaymentGatewayController implements OnModuleInit {
           amount: dto.amount,
           currency: dto.currency,
           productId: dto.productId,
+          idempotencyKey: dto.idempotencyKey,
         },
         metadata,
       ),

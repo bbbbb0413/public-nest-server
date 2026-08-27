@@ -11,6 +11,7 @@ export class PaymentMapper {
       paymentMethod: orm.paymentMethod,
       productId: orm.productId,
       quantity: orm.quantity,
+      status: orm.status,
     });
   }
 
@@ -23,6 +24,7 @@ export class PaymentMapper {
     orm.paymentMethod = domain.paymentMethod;
     orm.productId = domain.productId;
     orm.quantity = domain.quantity;
+    orm.status = domain.status;
     return orm;
   }
 }

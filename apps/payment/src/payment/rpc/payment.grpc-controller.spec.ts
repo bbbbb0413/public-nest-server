@@ -3,6 +3,7 @@ import { PaymentGrpcController } from './payment.grpc-controller';
 import { CreatePaymentUseCase } from '../application/create-payment.use-case';
 import { IPaymentRepository } from '../domain/repository/payment.repository';
 import { Payment } from '../domain/model/payment';
+import { PaymentStatus } from '../domain/model/payment-status.enum';
 import { Metadata } from '@grpc/grpc-js';
 import { CreatePaymentRequest, GetPaymentRequest, PaymentReply } from '@libs/rpc';
 import { RpcException } from '@nestjs/microservices';
@@ -26,6 +27,7 @@ const buildPaymentFixture = (): Payment =>
     paymentMethod: 'card',
     productId: 'product-001',
     quantity: '1',
+    status: PaymentStatus.COMPLETED,
   });
 
 describe('PaymentGrpcController', () => {
@@ -58,6 +60,7 @@ describe('PaymentGrpcController', () => {
         amount: 10000,
         currency: 'KRW',
         productId: 'product-001',
+        idempotencyKey: 'idem-key-1',
       };
       const metadata = new Metadata();
 
@@ -84,7 +87,7 @@ describe('PaymentGrpcController', () => {
 
       expect(paymentRepository.findPaymentById).toHaveBeenCalledWith(1);
       expect(reply.id).toBe(1);
-      expect(reply.status).toBe('COMPLETED'); // default status
+      expect(reply.status).toBe(PaymentStatus.COMPLETED);
     });
 
     it('결제가 존재하지 않으면 RpcException(NOT_FOUND)을 발생시켜야 한다', async () => {

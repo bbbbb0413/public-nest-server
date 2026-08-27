@@ -11,6 +11,7 @@ export class PaymentGrpcMapper {
       'gRPC', // default paymentMethod
       request.productId,
       '1', // default quantity
+      request.idempotencyKey,
     );
   }
 
@@ -19,7 +20,7 @@ export class PaymentGrpcMapper {
       id: payment.id,
       amount: payment.money.getAmount(),
       currency: payment.money.getCurrency(),
-      status: 'COMPLETED', // default status, domain model has no status field
+      status: payment.status,
     };
   }
 }

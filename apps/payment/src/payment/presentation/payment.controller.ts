@@ -25,6 +25,7 @@ export class PaymentController {
         dto.paymentMethod,
         dto.productId,
         dto.quantity,
+        dto.idempotencyKey,
       ),
     );
     return ResponseEntity.ok().body(PaymentOutDto.fromDomain(payment));

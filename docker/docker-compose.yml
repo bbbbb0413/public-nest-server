@@ -125,6 +125,7 @@ services:
                         PAYMENT_DB_USER_PW: ${DB_USER_PW}
                         PAYMENT_DB_NAME: payment
                         PAYMENT_DB_SYNCHRONIZE: "true"
+                        DB_CONNECTION_LIMIT: "50"
                         ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
                         REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
                         ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:5175}

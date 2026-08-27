@@ -6,5 +6,6 @@ export class CreatePaymentCommand {
     readonly paymentMethod: string,
     readonly productId: string,
     readonly quantity: string,
+    readonly idempotencyKey: string,
   ) {}
 }

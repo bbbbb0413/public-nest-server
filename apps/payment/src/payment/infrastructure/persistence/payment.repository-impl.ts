@@ -1,9 +1,12 @@
 import { EntityRepository } from '@libs/common/databases/typeorm/typeorm-ex.decorator';
 import { AbstractRepository } from '@libs/common/databases/typeorm/abstract.repository';
+import { DomainEvent } from '@libs/shared-kernel';
 import { PaymentOrmEntity } from '../orm/payment.orm-entity';
 import { IPaymentRepository } from '../../domain/repository/payment.repository';
 import { Payment } from '../../domain/model/payment';
 import { PaymentMapper } from '../mapper/payment.mapper';
+import { PaymentOutboxOrmEntity } from '../orm/payment-outbox.orm-entity';
+import { PaymentOutboxMapper } from '../mapper/payment-outbox.mapper';
 
 @EntityRepository(PaymentOrmEntity)
 export class PaymentRepositoryImpl
@@ -14,6 +17,26 @@ export class PaymentRepositoryImpl
     const orm = PaymentMapper.toOrmEntity(payment);
     const saved = await super.save(orm);
     return PaymentMapper.toDomain(saved as PaymentOrmEntity);
+  }
+
+  async persistWithEvents(
+    payment: Payment,
+    events: DomainEvent[],
+  ): Promise<Payment> {
+    const orm = PaymentMapper.toOrmEntity(payment);
+
+    const saved = await this.manager.transaction(async (manager) => {
+      const savedPayment = await manager.save(PaymentOrmEntity, orm);
+      if (events.length > 0) {
+        const outboxRows = events.map((event) =>
+          PaymentOutboxMapper.toOrmEntity(savedPayment.id, event),
+        );
+        await manager.save(PaymentOutboxOrmEntity, outboxRows);
+      }
+      return savedPayment;
+    });
+
+    return PaymentMapper.toDomain(saved);
   }
 
   async findPaymentById(id: number): Promise<Payment | null> {

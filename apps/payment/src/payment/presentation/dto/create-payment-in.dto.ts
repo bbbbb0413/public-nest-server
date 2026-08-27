@@ -30,4 +30,9 @@ export class CreatePaymentInDto {
   @IsString()
   @IsNotEmpty()
   quantity: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  idempotencyKey: string;
 }

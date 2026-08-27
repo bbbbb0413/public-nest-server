@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Payment } from '../../domain/model/payment';
+import { PaymentStatus } from '../../domain/model/payment-status.enum';
 
 export class PaymentOutDto {
   @ApiProperty()
@@ -23,6 +24,9 @@ export class PaymentOutDto {
   @ApiProperty()
   quantity: string;
 
+  @ApiProperty({ enum: PaymentStatus })
+  status: PaymentStatus;
+
   static fromDomain(payment: Payment): PaymentOutDto {
     const dto = new PaymentOutDto();
     dto.id = payment.id;
@@ -32,6 +36,7 @@ export class PaymentOutDto {
     dto.paymentMethod = payment.paymentMethod;
     dto.productId = payment.productId;
     dto.quantity = payment.quantity;
+    dto.status = payment.status;
     return dto;
   }
 }

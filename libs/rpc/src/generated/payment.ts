@@ -14,6 +14,7 @@ export interface CreatePaymentRequest {
   amount: number;
   currency: string;
   productId: string;
+  idempotencyKey: string;
 }
 
 export interface GetPaymentRequest {
