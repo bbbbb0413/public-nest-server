@@ -28,6 +28,6 @@ import { SessionRepository } from './infrastructure/session/session.repository';
     AuthService,
     { provide: ISessionRepository, useClass: SessionRepository },
   ],
-  exports: [AuthService],
+  exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

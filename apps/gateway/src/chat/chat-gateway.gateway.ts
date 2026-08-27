@@ -2,6 +2,7 @@ import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSo
 import { Server, Socket } from 'socket.io';
 import { Inject, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
+import { JwtService } from '@nestjs/jwt';
 import { firstValueFrom } from 'rxjs';
 import {
   ChatServiceClient,
@@ -39,6 +40,7 @@ export class ChatGateway
     @Inject('CHAT_SERVICE') private readonly client: ClientGrpc,
     @Inject(IPubSubPort) private readonly pubSubService: IPubSubPort,
     private readonly zsetRepo: RedisChatZsetRepository,
+    private readonly jwtService: JwtService,
   ) {}
 
   async onModuleInit() {
@@ -65,7 +67,19 @@ export class ChatGateway
       client.disconnect(true);
       return;
     }
-    this.logger.log(`Client connected to gateway: ${client.id}`);
+
+    try {
+      const payload: any = this.jwtService.verify(token);
+      client.data.user = {
+        uuid: payload.uuid ?? String(payload.id),
+        nickName: payload.nickName ?? payload.name,
+        id: payload.id ?? 0,
+      };
+      this.logger.log(`Client connected to gateway: ${client.id}`);
+    } catch (err: unknown) {
+      this.logger.warn(`Invalid or expired token for connection: ${client.id}`, err);
+      client.disconnect(true);
+    }
   }
 
   handleDisconnect(client: Socket) {
