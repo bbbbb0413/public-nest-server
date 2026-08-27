@@ -13,10 +13,8 @@ import { DataSourceOptions } from 'typeorm';
 import { ClsModule } from 'nestjs-cls';
 import { AuthModule } from '@libs/auth';
 
-import { ChatGateway } from './socket/chat.gateway';
 import { GroqController } from './groq/groq.controller';
 import { GroqService } from './groq/groq.service';
-import { RedisChatRepository } from './infrastructure/redis/chat/redis-chat.repository';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { AccountModule } from './account/account.module';
 import { MailModule } from './mail/mail.module';
@@ -61,8 +59,6 @@ import { MailModule } from './mail/mail.module';
     QueueService,
     GroqProvider,
     QueueConsumerProvider,
-    ChatGateway,
-    RedisChatRepository,
   ],
 })
 export class IdentityModule {}
