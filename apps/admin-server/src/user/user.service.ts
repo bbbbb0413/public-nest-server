@@ -2,7 +2,6 @@ import { Inject, Injectable } from '@nestjs/common';
 import joiPasswordComplexity from 'joi-password-complexity';
 import { PageOptionsDto } from '@libs/common/pagination/dto/page-options.dto';
 import { PageMetaDto } from '@libs/common/pagination/dto/page-meta.dto';
-import { AuthSignUserInDto } from '../auth/dto/auth-sign-user-in.dto';
 import { INTERNAL_ERROR_CODE } from '@libs/common/constants/internal-error-code.constants';
 import { UpdateRoleUserDto } from './dto/update-role-user.dto';
 import { ServerErrorException } from '@libs/common/exception/server-error.exception';
@@ -13,6 +12,12 @@ import { UserOutDto } from './presentation/dto/user-out.dto';
 import { User } from './domain/model/user';
 import { Email } from './domain/vo/email.vo';
 import { Password } from './domain/vo/password.vo';
+
+interface SignupInput {
+  name: string;
+  email: string;
+  password: string;
+}
 
 const PASSWORD_COMPLEXITY_OPTIONS = {
   min: 10,
@@ -32,14 +37,14 @@ export class UserService {
     @InjectQueue('mail') private readonly queue: Queue,
   ) {}
 
-  async isDuplicated(dto: AuthSignUserInDto): Promise<void> {
+  async isDuplicated(dto: SignupInput): Promise<void> {
     const count = await this.usersRepository.countByEmail(dto.email);
     if (count) {
       throw new ServerErrorException(INTERNAL_ERROR_CODE.ERROR);
     }
   }
 
-  isPasswordComplexity(dto: AuthSignUserInDto): void {
+  isPasswordComplexity(dto: SignupInput): void {
     const result = joiPasswordComplexity(PASSWORD_COMPLEXITY_OPTIONS).validate(
       dto.password,
     );
@@ -48,7 +53,7 @@ export class UserService {
     }
   }
 
-  async signup(dto: AuthSignUserInDto): Promise<UserOutDto> {
+  async signup(dto: SignupInput): Promise<UserOutDto> {
     if (dto.name.trim() === '') {
       throw new ServerErrorException(INTERNAL_ERROR_CODE.ERROR);
     }
@@ -69,7 +74,7 @@ export class UserService {
   }
 
   async changePassword(
-    dto: AuthSignUserInDto,
+    dto: SignupInput,
     executor: string,
   ): Promise<void> {
     await this.findUserByEmail(dto.email);

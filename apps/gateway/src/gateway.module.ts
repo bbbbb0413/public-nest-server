@@ -13,6 +13,7 @@ import {
 import { GrpcClientsModule } from './grpc-clients.module';
 import { PaymentGatewayController } from './payment/payment-gateway.controller';
 import { IdentityGatewayController } from './identity/identity-gateway.controller';
+import { AdminGatewayController } from './admin/admin-gateway.controller';
 import { ChatGateway } from './chat/chat-gateway.gateway';
 import PersonalDatabaseConfig from '@libs/common/config/database/personal-database.config';
 import { GatewayConfigModule } from './config/gateway-config.module';
@@ -41,7 +42,11 @@ import { AiGatewayModule } from './ai/ai-gateway.module';
     AiGatewayModule,
     RedisClusterModule,
   ],
-  controllers: [PaymentGatewayController, IdentityGatewayController],
+  controllers: [
+    PaymentGatewayController,
+    IdentityGatewayController,
+    AdminGatewayController,
+  ],
   providers: [
     ChatGateway,
     ShardedPubSubService,

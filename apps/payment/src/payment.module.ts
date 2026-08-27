@@ -7,9 +7,7 @@ import { ClsModule } from 'nestjs-cls';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import PaymentDatabaseConfig from '@libs/common/config/database/payment-database.config';
 import PersonalDatabaseConfig from '@libs/common/config/database/personal-database.config';
-import { AuthModule } from '@libs/auth';
 
-import { BullModule } from '@nestjs/bull';
 import { PaymentBcModule } from './payment/payment-bc.module';
 
 @Module({
@@ -25,23 +23,6 @@ import { PaymentBcModule } from './payment/payment-bc.module';
       });
     }),
 
-    BullModule.forRoot({
-      redis: {
-        host: process.env.REDIS_DB_HOST,
-        port: Number(process.env.REDIS_DB_PORT),
-      },
-    }),
-    BullModule.registerQueue({
-      name: 'test',
-      defaultJobOptions: {
-        attempts: 5,
-        backoff: { type: 'exponential', delay: 30000 },
-        removeOnComplete: true,
-        removeOnFail: false,
-      },
-    }),
-
-    AuthModule,
     PaymentBcModule,
     PrometheusModule.register(),
   ],

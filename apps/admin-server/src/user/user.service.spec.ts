@@ -24,7 +24,7 @@ describe('UserService', () => {
       providers: [
         UserService,
         { provide: IUsersRepository, useValue: usersRepository },
-        { provide: getQueueToken('test'), useValue: queue },
+        { provide: getQueueToken('mail'), useValue: queue },
       ],
     }).compile();
 

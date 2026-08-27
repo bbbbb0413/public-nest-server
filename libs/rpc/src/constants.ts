@@ -2,6 +2,7 @@ export const GRPC_PORTS = {
   IDENTITY: 50051,
   PAYMENT: 50052,
   CHAT: 50053,
+  AUTH: 50054,
 } as const;
 
 export const GRPC_PACKAGES = {

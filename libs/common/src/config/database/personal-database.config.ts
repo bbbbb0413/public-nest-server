@@ -16,7 +16,7 @@ export default registerAs('personal-database', () => ({
     __dirname + '/../../../../../libs/dao/src/personal/**/*.entity.{ts,js}',
     __dirname + '/../../../../../libs/dao/src/payment/**/*.entity.{ts,js}',
     __dirname +
-      '/../../../../../libs/auth/src/user/infrastructure/orm/*.orm-entity.{ts,js}',
+      '/../../../../../apps/admin-server/src/user/infrastructure/orm/*.orm-entity.{ts,js}',
     __dirname +
       '/../../../../../apps/identity/src/mail/infrastructure/orm/*.orm-entity.{ts,js}',
     __dirname +

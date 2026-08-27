@@ -3,6 +3,7 @@ import '@extension/json.extension';
 import '@extension/date.extension';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import PersonalDatabaseConfig from '@libs/common/config/database/personal-database.config';
 
 const environment = process.env.NODE_ENV || 'test';
 
@@ -12,7 +13,7 @@ const environment = process.env.NODE_ENV || 'test';
       envFilePath: `./config/.admin-server.${environment}.env`,
       isGlobal: true,
       cache: true,
-      load: [],
+      load: [PersonalDatabaseConfig],
     }),
   ],
 })

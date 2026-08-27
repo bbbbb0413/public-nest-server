@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
-import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { ISessionRepository } from './port/session-repository.port';
 import { UnauthorizedException } from '@nestjs/common';
@@ -12,19 +11,16 @@ const createSessionRepositoryMock = () => ({
 
 describe('AuthService', () => {
   let service: AuthService;
-  let userService: any;
   let jwtService: any;
   let sessionRepository: ReturnType<typeof createSessionRepositoryMock>;
 
   beforeEach(async () => {
     sessionRepository = createSessionRepositoryMock();
-    userService = { signIn: jest.fn() };
     jwtService = { sign: jest.fn().mockReturnValue('mock-token') };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
-        { provide: UserService, useValue: userService },
         { provide: JwtService, useValue: jwtService },
         { provide: ISessionRepository, useValue: sessionRepository },
       ],
@@ -36,11 +32,7 @@ describe('AuthService', () => {
   describe('validateApiKey', () => {
     it('환경변수에 등록된 API 키를 반환한다', () => {
       process.env.AUTH_KEY = 'valid-key';
-      const testService = new AuthService(
-        userService,
-        jwtService,
-        sessionRepository as any,
-      );
+      const testService = new AuthService(jwtService, sessionRepository as any);
       const result = testService.validateApiKey('valid-key');
       expect(result).toBe('valid-key');
     });
@@ -78,17 +70,6 @@ describe('AuthService', () => {
       const result = service.makeAuthToken({ id: 1 });
       expect(result).toBe('mock-token');
       expect(jwtService.sign).toHaveBeenCalledWith({ id: 1 });
-    });
-  });
-
-  describe('login', () => {
-    it('userService.signIn을 호출하고 결과를 반환한다', async () => {
-      const mockUserDto = { id: 1, email: 't@e.com' };
-      userService.signIn.mockResolvedValue(mockUserDto);
-
-      const result = await service.login('t@e.com', 'pw');
-      expect(result).toBe(mockUserDto);
-      expect(userService.signIn).toHaveBeenCalledWith('t@e.com', 'pw');
     });
   });
 

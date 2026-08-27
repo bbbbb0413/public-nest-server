@@ -5,6 +5,15 @@ import "common.proto";
 
 service AuthService {
   rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenResponse);
+
+  rpc Signup              (SignupRequest)              returns (AdminUserReply);
+  rpc AdminLogin           (AdminLoginRequest)           returns (AdminLoginResponse);
+  rpc GetAdminUsers        (GetAdminUsersRequest)        returns (GetAdminUsersResponse);
+  rpc GetAdminUser         (GetAdminUserRequest)         returns (AdminUserReply);
+  rpc ActivateAdminUser    (ActivateAdminUserRequest)    returns (AdminUserReply);
+  rpc UpdateAdminUserRole  (UpdateAdminUserRoleRequest)  returns (AdminUserReply);
+  rpc ChangeAdminPassword  (ChangeAdminPasswordRequest)  returns (rpc.common.Empty);
+  rpc RemoveAdminUser      (RemoveAdminUserRequest)      returns (rpc.common.Empty);
 }
 
 message ValidateTokenRequest {
@@ -15,4 +24,68 @@ message ValidateTokenRequest {
 message ValidateTokenResponse {
   bool valid = 1;
   rpc.common.Session session = 2;
+}
+
+message SignupRequest {
+  string name = 1;
+  string email = 2;
+  string password = 3;
+}
+
+message AdminUserReply {
+  int64 id = 1;
+  string name = 2;
+  string email = 3;
+  optional int64 activated_at = 4;
+}
+
+message AdminLoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message AdminLoginResponse {
+  string token = 1;
+  AdminUserReply user = 2;
+}
+
+message GetAdminUsersRequest {
+  int32 page = 1;
+  int32 take = 2;
+  string order = 3;
+}
+
+message GetAdminUsersResponse {
+  repeated AdminUserReply users = 1;
+  int32 page = 2;
+  int32 take = 3;
+  int32 item_count = 4;
+  int32 page_count = 5;
+  bool has_previous_page = 6;
+  bool has_next_page = 7;
+}
+
+message GetAdminUserRequest {
+  int64 id = 1;
+}
+
+message ActivateAdminUserRequest {
+  int64 user_id = 1;
+  bool activate = 2;
+}
+
+message UpdateAdminUserRoleRequest {
+  int64 user_id = 1;
+}
+
+message ChangeAdminPasswordRequest {
+  string name = 1;
+  string email = 2;
+  string password = 3;
+  string executor_email = 4;
+}
+
+message RemoveAdminUserRequest {
+  int64 id = 1;
+  string executor_email = 2;
 }

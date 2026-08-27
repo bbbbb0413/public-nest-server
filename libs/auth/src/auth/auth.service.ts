@@ -1,7 +1,5 @@
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
-import { UserOutDto } from '../user/presentation/dto/user-out.dto';
 import { JwtService } from '@nestjs/jwt';
-import { UserService } from '../user/user.service';
 import { JwtPayload } from '@libs/common/constants/jwt.constants';
 import { Session } from '@libs/shared-kernel';
 import { ISessionRepository } from './port/session-repository.port';
@@ -14,7 +12,6 @@ export class AuthService {
   ].filter(Boolean);
 
   constructor(
-    private readonly userService: UserService,
     private readonly jwtService: JwtService,
     @Inject(ISessionRepository)
     private readonly sessionRepository: ISessionRepository,
@@ -30,10 +27,6 @@ export class AuthService {
 
   makeAuthToken(payload: any): string {
     return this.jwtService.sign(payload);
-  }
-
-  async login(email: string, password: string): Promise<UserOutDto> {
-    return await this.userService.signIn(email, password);
   }
 
   async validateSession(id: string, sessionId: string): Promise<Session> {

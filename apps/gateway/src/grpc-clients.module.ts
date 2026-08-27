@@ -29,6 +29,14 @@ import { getGrpcOptions, GRPC_PACKAGES } from '@libs/rpc';
           'chat.proto',
         ),
       },
+      {
+        name: 'ADMIN_SERVICE',
+        ...getGrpcOptions(
+          process.env.AUTH_GRPC_URL || 'localhost:50054',
+          GRPC_PACKAGES.AUTH,
+          'auth.proto',
+        ),
+      },
     ]),
   ],
   exports: [ClientsModule],
