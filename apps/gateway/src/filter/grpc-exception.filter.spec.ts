@@ -92,4 +92,29 @@ describe('GrpcExceptionFilter', () => {
   it('알 수 없는 gRPC status는 500으로 매핑되어야 한다', () => {
     runTest(status.INTERNAL, 500);
   });
+
+  it('RpcException으로 감싸지 않은 순수 grpc-js 에러 객체도 처리해야 한다', () => {
+    // @nestjs/microservices의 ClientGrpc는 실패 시 RpcException이 아니라
+    // grpc-js가 만든 {code, details, metadata} 형태의 순수 객체를 그대로 던진다.
+    const rawGrpcError = { code: status.INVALID_ARGUMENT, details: '이메일 형식이 아닙니다' };
+
+    filter.catch(rawGrpcError, mockHost);
+
+    expect(mockResponse.status).toHaveBeenCalledWith(400);
+    expect(mockResponse.json).toHaveBeenCalledWith(
+      expect.objectContaining({ statusCode: 400, message: '이메일 형식이 아닙니다' }),
+    );
+  });
+
+  it('HttpException은 자기 status/response를 그대로 유지해야 한다', () => {
+    const { UnauthorizedException } = jest.requireActual('@nestjs/common');
+    const exception = new UnauthorizedException('세션이 만료되었습니다');
+
+    filter.catch(exception, mockHost);
+
+    expect(mockResponse.status).toHaveBeenCalledWith(401);
+    expect(mockResponse.json).toHaveBeenCalledWith(
+      expect.objectContaining({ message: '세션이 만료되었습니다' }),
+    );
+  });
 });

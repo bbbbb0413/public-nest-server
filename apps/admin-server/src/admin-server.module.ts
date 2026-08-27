@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_FILTER } from '@nestjs/core';
 import { BullModule } from '@nestjs/bull';
 import { TypeOrmExModule } from '@libs/common/databases/typeorm/typeorm-ex.module';
 import PersonalDatabaseConfig from '@libs/common/config/database/personal-database.config';
@@ -9,6 +10,7 @@ import { GrpcClientsModule } from './grpc-clients.module';
 import { MailNotificationConsumer } from './mail/mail-notification.consumer';
 import { UserModule } from './user/user.module';
 import { AdminAuthGrpcController } from './auth/admin-auth.grpc-controller';
+import { RpcErrorFilter } from './common/rpc-exception.filter';
 
 @Module({
   imports: [
@@ -29,6 +31,9 @@ import { AdminAuthGrpcController } from './auth/admin-auth.grpc-controller';
     UserModule,
   ],
   controllers: [AdminAuthGrpcController],
-  providers: [MailNotificationConsumer],
+  providers: [
+    MailNotificationConsumer,
+    { provide: APP_FILTER, useClass: RpcErrorFilter },
+  ],
 })
 export class AdminServerModule {}
