@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { IdentityGrpcController } from './identity.grpc-controller';
 import { LoginUseCase } from '../application/login.use-case';
+import { RegisterUseCase } from '../application/register.use-case';
 import { IGameAccountRepository, GameAccountRepository } from '../domain/repository/game-account.repository';
 import { IMailRepository } from '../../mail/domain/repository/mail.repository';
 import { GameAccount } from '../domain/model/game-account';
@@ -10,6 +11,10 @@ import { RpcException } from '@nestjs/microservices';
 import { LoginRequest, LoginResponse, GetGameAccountRequest, GameAccountReply, SendMailRequest, SendMailResponse } from '@libs/rpc';
 
 const mockLoginUseCase = () => ({
+  execute: jest.fn(),
+});
+
+const mockRegisterUseCase = () => ({
   execute: jest.fn(),
 });
 
@@ -25,11 +30,13 @@ const mockMailRepository = () => ({
 describe('IdentityGrpcController', () => {
   let controller: IdentityGrpcController;
   let loginUseCase: ReturnType<typeof mockLoginUseCase>;
+  let registerUseCase: ReturnType<typeof mockRegisterUseCase>;
   let gameAccountRepository: ReturnType<typeof mockGameAccountRepository>;
   let mailRepository: ReturnType<typeof mockMailRepository>;
 
   beforeEach(async () => {
     loginUseCase = mockLoginUseCase();
+    registerUseCase = mockRegisterUseCase();
     gameAccountRepository = mockGameAccountRepository();
     mailRepository = mockMailRepository();
 
@@ -37,6 +44,7 @@ describe('IdentityGrpcController', () => {
       controllers: [IdentityGrpcController],
       providers: [
         { provide: LoginUseCase, useValue: loginUseCase },
+        { provide: RegisterUseCase, useValue: registerUseCase },
         { provide: GameAccountRepository, useValue: gameAccountRepository },
         { provide: IMailRepository, useValue: mailRepository },
       ],
