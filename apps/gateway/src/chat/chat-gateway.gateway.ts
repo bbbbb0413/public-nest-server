@@ -206,16 +206,19 @@ export class ChatGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() payloadBuffer: Buffer,
   ) {
-    let payload: Chat.SendMessageRequest;
+    let roomId: string | null = null;
+    let content: string | null = null;
     try {
+      if (!payloadBuffer || !Buffer.isBuffer(payloadBuffer)) {
+        return { success: false, error: 'Invalid FlatBuffer payload' };
+      }
       const bb = new flatbuffers.ByteBuffer(new Uint8Array(payloadBuffer));
-      payload = Chat.SendMessageRequest.getRootAsSendMessageRequest(bb);
+      const payload = Chat.SendMessageRequest.getRootAsSendMessageRequest(bb);
+      roomId = payload.roomId();
+      content = payload.content();
     } catch (err) {
       return { success: false, error: 'Invalid FlatBuffer payload' };
     }
-
-    const roomId = payload.roomId();
-    const content = payload.content();
 
     if (!roomId || !content) {
       return { success: false, error: 'roomId and content are required' };

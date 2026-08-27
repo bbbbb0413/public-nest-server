@@ -216,6 +216,39 @@ describe('ChatGateway', () => {
       );
     });
 
+    it('Buffer가 아닌 데이터가 페이로드로 전달된 경우 Invalid FlatBuffer payload 에러를 반환해야 한다', async () => {
+      const mockSocket: Partial<Socket> = {
+        id: 'socket-invalid-fb',
+        rooms: new Set(['lobby']),
+        data: {
+          user: { uuid: 'user-1', nickName: '유저1', id: 1 },
+        },
+      };
+
+      const invalidPayload = 'not-a-buffer' as any;
+      const result = await gateway.handleSendMessage(mockSocket as Socket, invalidPayload);
+
+      expect(result).toEqual({ success: false, error: 'Invalid FlatBuffer payload' });
+    });
+
+    it('roomId 또는 content가 누락된 FlatBuffer 메시지 전송 시 에러를 반환해야 한다', async () => {
+      const mockSocket: Partial<Socket> = {
+        id: 'socket-missing-fields',
+        rooms: new Set(['lobby']),
+        data: {
+          user: { uuid: 'user-1', nickName: '유저1', id: 1 },
+        },
+      };
+
+      const emptyRoomPayload = buildFlatBufferPayload('', '내용');
+      const result1 = await gateway.handleSendMessage(mockSocket as Socket, emptyRoomPayload);
+      expect(result1).toEqual({ success: false, error: 'roomId and content are required' });
+
+      const emptyContentPayload = buildFlatBufferPayload('lobby', '');
+      const result2 = await gateway.handleSendMessage(mockSocket as Socket, emptyContentPayload);
+      expect(result2).toEqual({ success: false, error: 'roomId and content are required' });
+    });
+
     it('gRPC saveMessage 실패 시 에러 메시지를 반환해야 한다', async () => {
       const mockSocket: Partial<Socket> = {
         id: 'socket-8',
