@@ -8,6 +8,7 @@ import { RedisStreamsRelayService } from './stream/redis-streams-relay.service';
 import { JobStreamController } from './stream/job-stream.controller';
 import { AiServicePyHttpService } from './proxy/ai-service-py-http.service';
 import { PromptProxyController } from './proxy/prompt-proxy.controller';
+import { MyPromptProxyController } from './proxy/my-prompt-proxy.controller';
 import { LlmGatewayProxyController } from './proxy/llm-gateway-proxy.controller';
 import { ObservabilityProxyController } from './proxy/observability-proxy.controller';
 import { RagSessionProxyController } from './proxy/rag-session-proxy.controller';
@@ -21,6 +22,7 @@ import { KnowledgeJobController } from './knowledge/knowledge-job.controller';
     JobController,
     JobStreamController,
     PromptProxyController,
+    MyPromptProxyController,
     LlmGatewayProxyController,
     ObservabilityProxyController,
     RagSessionProxyController,

@@ -45,11 +45,18 @@ export abstract class BaseHttpService {
     }
   }
 
-  async patch(options: { method: string; data?: any }): Promise<any> {
+  async patch(options: {
+    method: string;
+    data?: any;
+    params?: Record<string, any>;
+  }): Promise<any> {
     const url = `${this.baseUrl}/${options.method}`;
     try {
       const response = await firstValueFrom(
-        this.httpService.patch(url, options.data, { headers: this.headers }),
+        this.httpService.patch(url, options.data, {
+          headers: this.headers,
+          params: options?.params,
+        }),
       );
       return response.data;
     } catch (e: unknown) {
@@ -57,11 +64,14 @@ export abstract class BaseHttpService {
     }
   }
 
-  async delete(options: { method: string }): Promise<any> {
+  async delete(options: { method: string; params?: Record<string, any> }): Promise<any> {
     const url = `${this.baseUrl}/${options.method}`;
     try {
       const response = await firstValueFrom(
-        this.httpService.delete(url, { headers: this.headers }),
+        this.httpService.delete(url, {
+          headers: this.headers,
+          params: options?.params,
+        }),
       );
       return response.data;
     } catch (e: unknown) {
