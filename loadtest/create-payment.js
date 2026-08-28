@@ -1,6 +1,11 @@
 // payment 서비스(POST /payment)에 대한 k6 부하테스트.
-// 실행: k6 run loadtest/create-payment.js
-// 대상 변경: k6 run -e BASE_URL=http://localhost:18081 loadtest/create-payment.js
+//
+// payment는 더 이상 host 포트를 노출하지 않는다(gateway를 통해서만 접근).
+// 그래서 이 스크립트도 도커 네트워크 안에서 payment 컨테이너 이름으로 직접 실행해야 한다:
+//   docker run --rm -i --network public-project_default \
+//     -e BASE_URL=http://payment:18081 grafana/k6 run - < loadtest/create-payment.js
+// (게이트웨이를 경유하는 실 트래픽 경로를 그대로 부하테스트하려면 JWT 발급 로직을
+//  스크립트에 추가하고 BASE_URL을 http://gateway:3000 으로 바꿔야 한다 — 지금은 다루지 않는다.)
 //
 // idempotencyKey를 매 반복마다 새로 만든다 — 안 그러면 두 번째 요청부터
 // Redis 멱등성 캐시에 히트해서 실제 쓰기 부하가 걸리지 않는다.
@@ -8,7 +13,7 @@ import http from 'k6/http';
 import { check } from 'k6';
 import { Counter } from 'k6/metrics';
 
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:18081';
+const BASE_URL = __ENV.BASE_URL || 'http://payment:18081';
 
 const completedCount = new Counter('payment_completed');
 const failedCount = new Counter('payment_failed');
