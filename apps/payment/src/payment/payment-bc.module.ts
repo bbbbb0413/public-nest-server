@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmExModule } from '@libs/common/databases/typeorm/typeorm-ex.module';
-import PersonalDatabaseConfig from '@libs/common/config/database/personal-database.config';
+import PaymentDatabaseConfig from '@libs/common/config/database/payment-database.config';
 import { PaymentController } from './presentation/payment.controller';
 import { PaymentGrpcController } from './rpc/payment.grpc-controller';
 import { CreatePaymentUseCase } from './application/create-payment.use-case';
@@ -23,7 +23,7 @@ import { PaymentReconciliationService } from './infrastructure/reconciliation/pa
   imports: [
     TypeOrmExModule.forFeatures(
       [PaymentRepositoryImpl, PaymentOutboxRepositoryImpl],
-      [PersonalDatabaseConfig().name],
+      [PaymentDatabaseConfig().name],
     ),
     PaymentKafkaClientModule,
   ],

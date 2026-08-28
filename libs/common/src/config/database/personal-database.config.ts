@@ -19,7 +19,5 @@ export default registerAs('personal-database', () => ({
       '/../../../../../apps/admin-server/src/user/infrastructure/orm/*.orm-entity.{ts,js}',
     __dirname +
       '/../../../../../apps/identity/src/mail/infrastructure/orm/*.orm-entity.{ts,js}',
-    __dirname +
-      '/../../../../../apps/payment/src/payment/infrastructure/orm/*.orm-entity.{ts,js}',
   ],
 }));
