@@ -15,11 +15,18 @@ export abstract class BaseHttpService {
     this.baseUrl = this?.port ? `${this.host}:${this.port}` : `${this.host}`;
   }
 
-  async post(options: { method: string; data?: any }): Promise<any> {
+  async post(options: {
+    method: string;
+    data?: any;
+    params?: Record<string, any>;
+  }): Promise<any> {
     const url = `${this.baseUrl}/${options.method}`;
     try {
       const response = await firstValueFrom(
-        this.httpService.post(url, options.data, { headers: this.headers }),
+        this.httpService.post(url, options.data, {
+          headers: this.headers,
+          params: options?.params,
+        }),
       );
       return response.data;
     } catch (e: unknown) {
