@@ -1,6 +1,6 @@
 // payment 서비스(POST /payment)에 대한 k6 부하테스트.
 // 실행: k6 run loadtest/create-payment.js
-// 대상 변경: k6 run -e BASE_URL=http://localhost:8081 loadtest/create-payment.js
+// 대상 변경: k6 run -e BASE_URL=http://localhost:18081 loadtest/create-payment.js
 //
 // idempotencyKey를 매 반복마다 새로 만든다 — 안 그러면 두 번째 요청부터
 // Redis 멱등성 캐시에 히트해서 실제 쓰기 부하가 걸리지 않는다.
@@ -8,7 +8,7 @@ import http from 'k6/http';
 import { check } from 'k6';
 import { Counter } from 'k6/metrics';
 
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:8081';
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:18081';
 
 const completedCount = new Counter('payment_completed');
 const failedCount = new Counter('payment_failed');
