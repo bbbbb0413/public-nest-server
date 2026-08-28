@@ -42,7 +42,16 @@ export class JobController {
     @Body() dto: AskJobInDto,
   ): Promise<JobAcceptedOutDto> {
     const userId = req.session.uuid;
-    const job = await this.jobStore.createJob(userId, 'rag.ask');
+    const { job, isNew } = await this.jobStore.createJob(
+      userId,
+      'rag.ask',
+      dto.idempotencyKey,
+    );
+
+    if (!isNew) {
+      // 멱등키로 이미 존재하는 잡을 반환한 경우 — 재발행하지 않는다.
+      return { jobId: job.jobId };
+    }
 
     await this.producer.publishAskRequested({
       jobId: job.jobId,

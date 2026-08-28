@@ -31,6 +31,14 @@ export class AskJobInDto {
   @IsNotEmpty()
   question: string;
 
+  @ApiProperty({
+    description: '동일 요청 중복 제출 방지를 위한 멱등키 (선택)',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  idempotencyKey?: string;
+
   @ApiProperty({ description: '검색할 청크 수', default: 5, required: false })
   @IsNumber()
   @IsOptional()

@@ -11,6 +11,7 @@ describe('JobStoreService', () => {
       hgetall: jest.fn(),
       expire: jest.fn().mockResolvedValue(1),
       set: jest.fn().mockResolvedValue('OK'),
+      get: jest.fn(),
       disconnect: jest.fn(),
     };
     jest.spyOn(RedisFactory, 'createRedisClient').mockReturnValue(mockRedis);
@@ -23,19 +24,53 @@ describe('JobStoreService', () => {
 
   describe('createJob', () => {
     it('잡 메타를 생성하고 Redis에 해시로 저장하며 만료 시간을 설정한다', async () => {
-      const meta = await service.createJob('user-1', 'rag.ask');
+      const { job, isNew } = await service.createJob('user-1', 'rag.ask');
 
-      expect(meta.userId).toBe('user-1');
-      expect(meta.type).toBe('rag.ask');
-      expect(meta.status).toBe('queued');
-      expect(meta.jobId).toBeDefined();
-      expect(mockRedis.hset).toHaveBeenCalledWith(`job:${meta.jobId}`, expect.objectContaining({
-        jobId: meta.jobId,
+      expect(isNew).toBe(true);
+      expect(job.userId).toBe('user-1');
+      expect(job.type).toBe('rag.ask');
+      expect(job.status).toBe('queued');
+      expect(job.jobId).toBeDefined();
+      expect(mockRedis.hset).toHaveBeenCalledWith(`job:${job.jobId}`, expect.objectContaining({
+        jobId: job.jobId,
         userId: 'user-1',
         type: 'rag.ask',
         status: 'queued',
       }));
-      expect(mockRedis.expire).toHaveBeenCalledWith(`job:${meta.jobId}`, 3600);
+      expect(mockRedis.expire).toHaveBeenCalledWith(`job:${job.jobId}`, 3600);
+    });
+
+    it('idempotencyKey를 처음 쓰면 새 잡을 만들고 선점 키를 EX/NX로 설정한다', async () => {
+      const { job, isNew } = await service.createJob('user-1', 'rag.ask', 'idem-1');
+
+      expect(isNew).toBe(true);
+      expect(mockRedis.set).toHaveBeenCalledWith(
+        'job:idem:user-1:idem-1',
+        job.jobId,
+        'EX',
+        3600,
+        'NX',
+      );
+    });
+
+    it('같은 idempotencyKey로 재요청하면 기존 잡을 그대로 반환하고 새로 만들지 않는다', async () => {
+      mockRedis.set.mockResolvedValueOnce(null); // 선점 실패 = 이미 존재
+      const existingJob = {
+        jobId: 'existing-job-1',
+        userId: 'user-1',
+        type: 'rag.ask',
+        status: 'processing',
+        createdAt: '2026-08-28T00:00:00.000Z',
+      };
+      mockRedis.get.mockResolvedValueOnce('existing-job-1');
+      mockRedis.hgetall.mockResolvedValueOnce(existingJob);
+
+      const { job, isNew } = await service.createJob('user-1', 'rag.ask', 'idem-1');
+
+      expect(isNew).toBe(false);
+      expect(job).toEqual(existingJob);
+      // 새 잡을 실제로 저장하지 않아야 한다 (선점 실패 후 바로 반환)
+      expect(mockRedis.hset).not.toHaveBeenCalled();
     });
   });
 

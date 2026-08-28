@@ -77,7 +77,7 @@ export class KnowledgeJobController {
 
     const fileName = Buffer.from(file.originalname, 'latin1').toString('utf8');
     const userId = req.session.uuid;
-    const job = await this.jobStore.createJob(userId, 'knowledge.ingest');
+    const { job } = await this.jobStore.createJob(userId, 'knowledge.ingest');
 
     await this.fileStaging.stage(job.jobId, file.buffer);
     await this.producer.publishKnowledgeIngestRequested({

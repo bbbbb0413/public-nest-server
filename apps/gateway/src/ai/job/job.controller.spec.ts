@@ -23,11 +23,14 @@ describe('JobController', () => {
   beforeEach(async () => {
     mockJobStore = {
       createJob: jest.fn().mockResolvedValue({
-        jobId: 'job-123',
-        userId: 'user-uuid-123',
-        type: 'rag.ask',
-        status: 'queued',
-        createdAt: new Date().toISOString(),
+        job: {
+          jobId: 'job-123',
+          userId: 'user-uuid-123',
+          type: 'rag.ask',
+          status: 'queued',
+          createdAt: new Date().toISOString(),
+        },
+        isNew: true,
       }),
       getJob: jest.fn(),
       cancelJob: jest.fn().mockResolvedValue(undefined),
@@ -70,7 +73,7 @@ describe('JobController', () => {
 
       expect(res.status).toBe(202);
       expect(res.body).toEqual({ jobId: 'job-123' });
-      expect(mockJobStore.createJob).toHaveBeenCalledWith('user-uuid-123', 'rag.ask');
+      expect(mockJobStore.createJob).toHaveBeenCalledWith('user-uuid-123', 'rag.ask', undefined);
       expect(mockProducer.publishAskRequested).toHaveBeenCalledWith({
         jobId: 'job-123',
         userId: 'user-uuid-123',
@@ -80,6 +83,28 @@ describe('JobController', () => {
         sessionId: undefined,
         conversationHistory: undefined,
       });
+    });
+
+    it('idempotencyKey로 이미 존재하는 잡이 반환되면(isNew=false) 재발행하지 않는다', async () => {
+      mockJobStore.createJob.mockResolvedValueOnce({
+        job: {
+          jobId: 'existing-job-1',
+          userId: 'user-uuid-123',
+          type: 'rag.ask',
+          status: 'processing',
+          createdAt: new Date().toISOString(),
+        },
+        isNew: false,
+      });
+
+      const res = await request(app.getHttpServer())
+        .post('/ai/rag/jobs')
+        .send({ question: '질문입니다', idempotencyKey: 'idem-1' });
+
+      expect(res.status).toBe(202);
+      expect(res.body).toEqual({ jobId: 'existing-job-1' });
+      expect(mockJobStore.createJob).toHaveBeenCalledWith('user-uuid-123', 'rag.ask', 'idem-1');
+      expect(mockProducer.publishAskRequested).not.toHaveBeenCalled();
     });
   });
 

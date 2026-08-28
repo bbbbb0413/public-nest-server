@@ -24,7 +24,7 @@ describe('KnowledgeJobController', () => {
 
   beforeEach(async () => {
     mockJobStore = {
-      createJob: jest.fn().mockResolvedValue({ jobId: 'job-123' }),
+      createJob: jest.fn().mockResolvedValue({ job: { jobId: 'job-123' }, isNew: true }),
     };
     mockFileStaging = {
       stage: jest.fn().mockResolvedValue(undefined),
