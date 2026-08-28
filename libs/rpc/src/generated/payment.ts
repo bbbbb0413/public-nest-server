@@ -19,12 +19,31 @@ export interface CreatePaymentRequest {
 
 export interface GetPaymentRequest {
   paymentId: number;
+  accountId: number;
+}
+
+export interface ListPaymentsRequest {
+  accountId: number;
+  page: number;
+  take: number;
+}
+
+export interface ListPaymentsResponse {
+  payments: PaymentReply[];
+  page: number;
+  take: number;
+  itemCount: number;
+  pageCount: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
 }
 
 export interface PaymentReply {
-  id: number;
+  paymentId: number;
+  accountId: number;
   amount: number;
   currency: string;
+  productId: string;
   status: string;
 }
 
@@ -32,6 +51,8 @@ export interface PaymentServiceClient {
   createPayment(request: CreatePaymentRequest, metadata?: Metadata): Observable<PaymentReply>;
 
   getPayment(request: GetPaymentRequest, metadata?: Metadata): Observable<PaymentReply>;
+
+  listPayments(request: ListPaymentsRequest, metadata?: Metadata): Observable<ListPaymentsResponse>;
 }
 
 export interface PaymentServiceController {
@@ -44,11 +65,16 @@ export interface PaymentServiceController {
     request: GetPaymentRequest,
     metadata?: Metadata,
   ): Promise<PaymentReply> | Observable<PaymentReply> | PaymentReply;
+
+  listPayments(
+    request: ListPaymentsRequest,
+    metadata?: Metadata,
+  ): Promise<ListPaymentsResponse> | Observable<ListPaymentsResponse> | ListPaymentsResponse;
 }
 
 export function PaymentServiceControllerMethods() {
   return function (constructor: Function) {
-    const grpcMethods: string[] = ["createPayment", "getPayment"];
+    const grpcMethods: string[] = ["createPayment", "getPayment", "listPayments"];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
       GrpcMethod("PaymentService", method)(constructor.prototype[method], method, descriptor);

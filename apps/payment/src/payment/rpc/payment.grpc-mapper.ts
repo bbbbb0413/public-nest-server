@@ -17,9 +17,11 @@ export class PaymentGrpcMapper {
 
   static toReply(payment: Payment): PaymentReply {
     return {
-      id: payment.id,
+      paymentId: payment.id,
+      accountId: payment.userId,
       amount: payment.money.getAmount(),
       currency: payment.money.getCurrency(),
+      productId: payment.productId,
       status: payment.status,
     };
   }

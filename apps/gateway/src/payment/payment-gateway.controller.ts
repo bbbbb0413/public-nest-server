@@ -1,9 +1,22 @@
-import { Body, Controller, Get, Inject, OnModuleInit, Param, ParseIntPipe, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  DefaultValuePipe,
+  Get,
+  Inject,
+  OnModuleInit,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { firstValueFrom } from 'rxjs';
 import { GatewayAuthGuard } from '../auth/gateway-auth.guard';
-import { PaymentServiceClient, PaymentReply, toMetadata } from '@libs/rpc';
+import { PaymentServiceClient, PaymentReply, ListPaymentsResponse, toMetadata } from '@libs/rpc';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { ResponseEntity } from '@libs/common/network/response-entity';
 import { ApiResponseEntity } from '@libs/common/decorator/api-response-entity';
@@ -48,6 +61,26 @@ export class PaymentGatewayController implements OnModuleInit {
     return ResponseEntity.ok().body(reply);
   }
 
+  @Get()
+  @ApiResponseEntity({ type: Object, summary: '내 결제 내역 조회' })
+  async listPayments(
+    @Req() req: any,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('take', new DefaultValuePipe(20), ParseIntPipe) take: number,
+  ): Promise<ResponseEntity<ListPaymentsResponse>> {
+    const session = req.session;
+    const metadata = toMetadata(session);
+
+    const reply = await firstValueFrom(
+      this.paymentService.listPayments(
+        { accountId: session.gameDbId, page, take },
+        metadata,
+      ),
+    );
+
+    return ResponseEntity.ok().body(reply);
+  }
+
   @Get(':id')
   @ApiResponseEntity({ type: Object, summary: '결제 조회' })
   async getPayment(
@@ -58,7 +91,10 @@ export class PaymentGatewayController implements OnModuleInit {
     const metadata = toMetadata(session);
 
     const reply = await firstValueFrom(
-      this.paymentService.getPayment({ paymentId: id }, metadata),
+      this.paymentService.getPayment(
+        { paymentId: id, accountId: session.gameDbId },
+        metadata,
+      ),
     );
 
     return ResponseEntity.ok().body(reply);

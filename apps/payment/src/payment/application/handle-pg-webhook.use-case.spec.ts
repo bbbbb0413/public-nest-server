@@ -11,6 +11,7 @@ const mockPaymentRepository = () => ({
   persistWithEvents: jest.fn(),
   findPaymentById: jest.fn(),
   findAllAndCount: jest.fn(),
+  findPaymentsByUserId: jest.fn(),
 });
 
 const buildPayment = (status: PaymentStatus): Payment =>

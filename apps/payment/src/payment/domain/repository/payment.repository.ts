@@ -11,6 +11,12 @@ export interface IPaymentRepository {
     skip: number,
     orderBy: 'ASC' | 'DESC',
   ): Promise<[Payment[], number]>;
+  /** 특정 사용자 소유의 결제만 최신순으로 페이지네이션 조회한다. */
+  findPaymentsByUserId(
+    userId: number,
+    take: number,
+    skip: number,
+  ): Promise<[Payment[], number]>;
 }
 
 export const IPaymentRepository = Symbol('IPaymentRepository');

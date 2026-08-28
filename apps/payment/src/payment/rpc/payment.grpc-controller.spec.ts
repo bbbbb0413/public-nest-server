@@ -5,7 +5,7 @@ import { IPaymentRepository } from '../domain/repository/payment.repository';
 import { Payment } from '../domain/model/payment';
 import { PaymentStatus } from '../domain/model/payment-status.enum';
 import { Metadata } from '@grpc/grpc-js';
-import { CreatePaymentRequest, GetPaymentRequest, PaymentReply } from '@libs/rpc';
+import { CreatePaymentRequest, GetPaymentRequest, ListPaymentsRequest, PaymentReply } from '@libs/rpc';
 import { RpcException } from '@nestjs/microservices';
 
 const mockCreatePaymentUseCase = () => ({
@@ -16,6 +16,7 @@ const mockPaymentRepository = () => ({
   persist: jest.fn(),
   findPaymentById: jest.fn(),
   findAllAndCount: jest.fn(),
+  findPaymentsByUserId: jest.fn(),
 });
 
 const buildPaymentFixture = (): Payment =>
@@ -67,26 +68,27 @@ describe('PaymentGrpcController', () => {
       const reply = (await controller.createPayment(request, metadata)) as PaymentReply;
 
       expect(createPaymentUseCase.execute).toHaveBeenCalled();
-      expect(reply.id).toBe(1);
+      expect(reply.paymentId).toBe(1);
       expect(reply.amount).toBe(10000);
       expect(reply.currency).toBe('KRW');
     });
   });
 
   describe('getPayment', () => {
-    it('결제가 존재하면 gRPC PaymentReply를 반환해야 한다', async () => {
+    it('본인 결제이면 gRPC PaymentReply를 반환해야 한다', async () => {
       const fixture = buildPaymentFixture();
       paymentRepository.findPaymentById.mockResolvedValue(fixture);
 
       const request: GetPaymentRequest = {
         paymentId: 1,
+        accountId: 100,
       };
       const metadata = new Metadata();
 
       const reply = (await controller.getPayment(request, metadata)) as PaymentReply;
 
       expect(paymentRepository.findPaymentById).toHaveBeenCalledWith(1);
-      expect(reply.id).toBe(1);
+      expect(reply.paymentId).toBe(1);
       expect(reply.status).toBe(PaymentStatus.COMPLETED);
     });
 
@@ -95,10 +97,63 @@ describe('PaymentGrpcController', () => {
 
       const request: GetPaymentRequest = {
         paymentId: 999,
+        accountId: 100,
       };
       const metadata = new Metadata();
 
       await expect(controller.getPayment(request, metadata)).rejects.toThrow(RpcException);
+    });
+
+    it('다른 사용자의 결제를 조회하면 RpcException(NOT_FOUND)을 발생시켜야 한다 (IDOR 방지)', async () => {
+      const fixture = buildPaymentFixture(); // userId: 100
+      paymentRepository.findPaymentById.mockResolvedValue(fixture);
+
+      const request: GetPaymentRequest = {
+        paymentId: 1,
+        accountId: 999, // 결제 소유자가 아닌 다른 사용자
+      };
+      const metadata = new Metadata();
+
+      await expect(controller.getPayment(request, metadata)).rejects.toThrow(RpcException);
+    });
+  });
+
+  describe('listPayments', () => {
+    it('요청자 소유의 결제만 페이지네이션해 반환해야 한다', async () => {
+      const fixture = buildPaymentFixture();
+      paymentRepository.findPaymentsByUserId.mockResolvedValue([[fixture], 1]);
+
+      const request: ListPaymentsRequest = {
+        accountId: 100,
+        page: 1,
+        take: 20,
+      };
+      const metadata = new Metadata();
+
+      const reply = await controller.listPayments(request, metadata);
+
+      expect(paymentRepository.findPaymentsByUserId).toHaveBeenCalledWith(100, 20, 0);
+      expect(reply.payments).toHaveLength(1);
+      expect(reply.payments[0].paymentId).toBe(1);
+      expect(reply.itemCount).toBe(1);
+      expect(reply.pageCount).toBe(1);
+      expect(reply.hasNextPage).toBe(false);
+      expect(reply.hasPreviousPage).toBe(false);
+    });
+
+    it('page/take가 0 이하로 오면 기본값(1페이지, 20건)으로 보정해야 한다', async () => {
+      paymentRepository.findPaymentsByUserId.mockResolvedValue([[], 0]);
+
+      const request: ListPaymentsRequest = {
+        accountId: 100,
+        page: 0,
+        take: 0,
+      };
+      const metadata = new Metadata();
+
+      await controller.listPayments(request, metadata);
+
+      expect(paymentRepository.findPaymentsByUserId).toHaveBeenCalledWith(100, 20, 0);
     });
   });
 });

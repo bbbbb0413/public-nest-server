@@ -37,6 +37,7 @@ const mockIdentityService = {
 const mockPaymentService = {
   createPayment: jest.fn(),
   getPayment: jest.fn(),
+  listPayments: jest.fn(),
 };
 
 const mockIdentityClientGrpc = {
@@ -208,11 +209,48 @@ describe('Gateway E2E', () => {
       expect(res.status).toBe(200);
       expect(res.body.code).toBe(0);
       expect(res.body.data.id).toBe(1);
+      expect(mockPaymentService.getPayment).toHaveBeenCalledWith(
+        { paymentId: 1, accountId: mockSession.gameDbId },
+        expect.anything(),
+      );
     });
 
     it('숫자가 아닌 id → 400 반환', async () => {
       const res = await request(app.getHttpServer()).get('/payments/abc');
       expect(res.status).toBe(400);
+    });
+  });
+
+  describe('GET /payments (내 결제 내역 조회)', () => {
+    it('세션의 accountId로 gRPC listPayments를 호출하고 결과를 반환한다', async () => {
+      const listReply = {
+        payments: [
+          {
+            paymentId: 1,
+            accountId: mockSession.gameDbId,
+            amount: 1000,
+            currency: 'KRW',
+            productId: 'item-1',
+            status: 'COMPLETED',
+          },
+        ],
+        page: 1,
+        take: 20,
+        itemCount: 1,
+        pageCount: 1,
+        hasPreviousPage: false,
+        hasNextPage: false,
+      };
+      mockPaymentService.listPayments.mockReturnValue(of(listReply));
+
+      const res = await request(app.getHttpServer()).get('/payments');
+
+      expect(res.status).toBe(200);
+      expect(mockPaymentService.listPayments).toHaveBeenCalledWith(
+        expect.objectContaining({ accountId: mockSession.gameDbId, page: 1, take: 20 }),
+        expect.anything(),
+      );
+      expect(res.body.data.payments).toHaveLength(1);
     });
   });
 

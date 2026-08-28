@@ -58,4 +58,18 @@ export class PaymentRepositoryImpl
       .getManyAndCount();
     return [orms.map(PaymentMapper.toDomain), count];
   }
+
+  async findPaymentsByUserId(
+    userId: number,
+    take: number,
+    skip: number,
+  ): Promise<[Payment[], number]> {
+    const [orms, count] = await this.queryBuilder
+      .where(`${this.alias}.userId = :userId`, { userId })
+      .take(take)
+      .skip(skip)
+      .orderBy(`${this.alias}.id`, 'DESC')
+      .getManyAndCount();
+    return [orms.map(PaymentMapper.toDomain), count];
+  }
 }
