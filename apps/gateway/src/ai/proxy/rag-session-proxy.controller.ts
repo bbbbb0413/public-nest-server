@@ -39,15 +39,29 @@ export class RagSessionProxyController {
   }
 
   @Get(':sessionId')
-  @ApiOperation({ summary: '대화 세션 상세 조회 (ai-service-py 프록시)' })
-  async getSession(@Param('sessionId') sessionId: string): Promise<unknown> {
-    return this.aiServicePy.get({ method: `rag/sessions/${sessionId}` });
+  @ApiOperation({ summary: '대화 세션 상세 조회 — 본인 세션만 (ai-service-py 프록시)' })
+  async getSession(
+    @Req() req: AuthenticatedRequest,
+    @Param('sessionId') sessionId: string,
+  ): Promise<unknown> {
+    // userId 를 붙이지 않으면 ai-service-py 가 소유자를 가릴 수 없다.
+    // 세션 id 만 알면 남의 대화를 읽던 구멍이 여기 있었다.
+    return this.aiServicePy.get({
+      method: `rag/sessions/${sessionId}`,
+      params: { userId: req.session.uuid },
+    });
   }
 
   @Delete(':sessionId')
   @HttpCode(204)
-  @ApiOperation({ summary: '대화 세션 삭제 (ai-service-py 프록시)' })
-  async deleteSession(@Param('sessionId') sessionId: string): Promise<void> {
-    await this.aiServicePy.delete({ method: `rag/sessions/${sessionId}` });
+  @ApiOperation({ summary: '대화 세션 삭제 — 본인 세션만 (ai-service-py 프록시)' })
+  async deleteSession(
+    @Req() req: AuthenticatedRequest,
+    @Param('sessionId') sessionId: string,
+  ): Promise<void> {
+    await this.aiServicePy.delete({
+      method: `rag/sessions/${sessionId}`,
+      params: { userId: req.session.uuid },
+    });
   }
 }
