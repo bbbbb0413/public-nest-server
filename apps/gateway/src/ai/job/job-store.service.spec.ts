@@ -100,6 +100,19 @@ describe('JobStoreService', () => {
     });
   });
 
+  describe('updateProgress', () => {
+    it('진행 상태 및 단계를 Redis 해시에 업데이트하고 만료 시간을 갱신한다', async () => {
+      await service.updateProgress('job-123', 'chunk', 50);
+
+      expect(mockRedis.hset).toHaveBeenCalledWith('job:job-123', {
+        status: 'processing',
+        step: 'chunk',
+        progress: '50',
+      });
+      expect(mockRedis.expire).toHaveBeenCalledWith('job:job-123', 3600);
+    });
+  });
+
   describe('cancelJob', () => {
     it('취소 표시 메서드 호출 시 Redis에 취소 상태 및 만료 시간을 기록한다', async () => {
       await service.cancelJob('job-123');

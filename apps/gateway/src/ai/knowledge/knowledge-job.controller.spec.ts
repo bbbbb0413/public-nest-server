@@ -96,16 +96,16 @@ describe('KnowledgeJobController', () => {
       expect(res.body.message).toBe('지원하지 않는 파일 형식입니다. (TXT, PDF, MD 파일만 지원)');
     });
 
-    it('에러 시: 10MB 초과 파일 업로드 시 413 Payload Too Large 또는 400 Bad Request 및 에러 메시지 반환', async () => {
-      // 10MB 초과하는 파일 버퍼 생성 (10MB = 10 * 1024 * 1024 bytes)
-      const largeBuffer = Buffer.alloc(10 * 1024 * 1024 + 100);
+    it('에러 시: 50MB 초과 파일 업로드 시 413 Payload Too Large 또는 400 Bad Request 및 에러 메시지 반환', async () => {
+      // 50MB 초과하는 파일 버퍼 생성 (50MB = 50 * 1024 * 1024 bytes)
+      const largeBuffer = Buffer.alloc(50 * 1024 * 1024 + 100);
       const res = await request(app.getHttpServer())
         .post('/ai/knowledge/jobs')
         .attach('file', largeBuffer, 'large.txt');
 
       // 400 또는 413을 모두 허용하도록 스펙에 나와 있음
       expect([400, 413]).toContain(res.status);
-      expect(res.body.message).toBe('파일 크기가 10MB 제한을 초과했습니다.');
+      expect(res.body.message).toBe('파일 크기가 50MB 제한을 초과했습니다.');
     });
   });
 });
