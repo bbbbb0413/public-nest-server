@@ -6,12 +6,16 @@ import { RedisFactory } from '@libs/common/databases/redis/redis.factory';
 export type AiJobType = 'rag.ask' | 'knowledge.ingest';
 export type AiJobStatus = 'queued' | 'processing' | 'done' | 'error' | 'cancelled';
 
+export type AiJobStep = 'extract' | 'chunk' | 'embed' | 'index';
+
 export interface AiJobMeta {
   jobId: string;
   userId: string;
   type: AiJobType;
   status: AiJobStatus;
   createdAt: string;
+  step?: AiJobStep;
+  progress?: number;
 }
 
 export interface AiJobCreationResult {
@@ -70,12 +74,29 @@ export class JobStoreService implements OnModuleDestroy {
     return { job: meta, isNew: true };
   }
 
+  async updateProgress(
+    jobId: string,
+    step: AiJobStep,
+    progress: number,
+  ): Promise<void> {
+    const key = this.jobKey(jobId);
+    await this.redis.hset(key, {
+      status: 'processing',
+      step,
+      progress: progress.toString(),
+    });
+    await this.redis.expire(key, JOB_TTL_SECONDS);
+  }
+
   async getJob(jobId: string): Promise<AiJobMeta | null> {
     const raw = await this.redis.hgetall(this.jobKey(jobId));
     if (Object.keys(raw).length === 0) {
       return null;
     }
-    return raw as unknown as AiJobMeta;
+    return {
+      ...raw,
+      progress: raw.progress !== undefined ? Number(raw.progress) : undefined,
+    } as unknown as AiJobMeta;
   }
 
   async cancelJob(jobId: string): Promise<void> {

@@ -28,7 +28,7 @@ export class KnowledgeUploadExceptionFilter implements ExceptionFilter {
 
     if (isMulterLimitError) {
       status = HttpStatus.PAYLOAD_TOO_LARGE;
-      message = '파일 크기가 10MB 제한을 초과했습니다.';
+      message = '파일 크기가 50MB 제한을 초과했습니다.';
     } else if (exception instanceof HttpException) {
       status = exception.getStatus();
       const resBody = exception.getResponse();

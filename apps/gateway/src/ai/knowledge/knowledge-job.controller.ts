@@ -30,7 +30,7 @@ interface AuthenticatedRequest extends Request {
   session: Session;
 }
 
-const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = ['text/plain', 'application/pdf', 'text/markdown'];
 
 @ApiTags('ai')
