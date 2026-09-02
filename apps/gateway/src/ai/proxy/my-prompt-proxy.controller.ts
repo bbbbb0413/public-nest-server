@@ -1,4 +1,16 @@
-import { Body, Controller, Delete, Get, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { Session } from '@libs/shared-kernel';
@@ -31,8 +43,17 @@ export class MyPromptProxyController {
     });
   }
 
+  @Get('list')
+  @ApiOperation({ summary: '내 저장된 시스템 프롬프트 목록 조회' })
+  async listMine(@Req() req: AuthenticatedRequest): Promise<unknown> {
+    return this.aiServicePy.get({
+      method: `prompts/${RAG_PROMPT_NAME}`,
+      params: { userId: req.session.uuid },
+    });
+  }
+
   @Post()
-  @ApiOperation({ summary: '내 시스템 프롬프트 저장 후 즉시 적용' })
+  @ApiOperation({ summary: '내 시스템 프롬프트 저장 (옵션에 따라 즉시 활성화)' })
   async saveMine(
     @Req() req: AuthenticatedRequest,
     @Body() dto: SaveMyPromptInDto,
@@ -46,19 +67,49 @@ export class MyPromptProxyController {
       data: { name: RAG_PROMPT_NAME, content: dto.content, variables, userId },
     })) as { version: number };
 
+    if (dto.activate !== false) {
+      return this.aiServicePy.patch({
+        method: `prompts/${RAG_PROMPT_NAME}/${created.version}/activate`,
+        params: { userId },
+      });
+    }
+
+    return created;
+  }
+
+  @Patch(':version/activate')
+  @ApiOperation({ summary: '특정 버전의 내 시스템 프롬프트 활성화' })
+  async activateMine(
+    @Req() req: AuthenticatedRequest,
+    @Param('version', ParseIntPipe) version: number,
+  ): Promise<unknown> {
     return this.aiServicePy.patch({
-      method: `prompts/${RAG_PROMPT_NAME}/${created.version}/activate`,
-      params: { userId },
+      method: `prompts/${RAG_PROMPT_NAME}/${version}/activate`,
+      params: { userId: req.session.uuid },
     });
   }
 
   @Delete()
   @HttpCode(204)
-  @ApiOperation({ summary: '내 시스템 프롬프트를 관리자 기본값으로 초기화' })
+  @ApiOperation({ summary: '내 활성 시스템 프롬프트를 관리자 기본값으로 초기화' })
   async resetMine(@Req() req: AuthenticatedRequest): Promise<void> {
     await this.aiServicePy.delete({
       method: `prompts/${RAG_PROMPT_NAME}/active`,
       params: { userId: req.session.uuid },
     });
   }
+
+  @Delete(':version')
+  @HttpCode(204)
+  @ApiOperation({ summary: '특정 버전의 내 시스템 프롬프트 삭제' })
+  async deleteMine(
+    @Req() req: AuthenticatedRequest,
+    @Param('version', ParseIntPipe) version: number,
+  ): Promise<void> {
+    await this.aiServicePy.delete({
+      method: `prompts/${RAG_PROMPT_NAME}/${version}`,
+      params: { userId: req.session.uuid },
+    });
+  }
 }
+

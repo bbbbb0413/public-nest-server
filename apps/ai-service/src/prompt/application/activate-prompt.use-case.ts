@@ -1,4 +1,9 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PromptTemplate } from '../domain/model/prompt-template';
 import {
   IPromptTemplateRepository,
@@ -24,8 +29,24 @@ export class ActivatePromptUseCase {
       );
     }
 
-    await this.repo.deactivateAllByName(command.name);
+    if (
+      command.userId &&
+      target.userId &&
+      target.userId !== command.userId
+    ) {
+      throw new ForbiddenException(
+        '다른 사용자의 프롬프트를 활성화할 수 없습니다.',
+      );
+    }
+
+    if (command.userId) {
+      await this.repo.deactivateAllForUser(command.name, command.userId);
+    } else {
+      await this.repo.deactivateAllByName(command.name);
+    }
+
     const activated = target.activate();
     return this.repo.update(activated);
   }
 }
+
