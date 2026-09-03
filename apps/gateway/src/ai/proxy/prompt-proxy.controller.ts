@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { GatewayAuthGuard } from '../../auth/gateway-auth.guard';
+import { AdminGuard } from '../../auth/admin.guard';
 import { AiServicePyHttpService } from './ai-service-py-http.service';
 import { CreatePromptInDto } from './dto/create-prompt-in.dto';
 
@@ -21,6 +22,7 @@ export class PromptProxyController {
   constructor(private readonly aiServicePy: AiServicePyHttpService) {}
 
   @Post()
+  @UseGuards(AdminGuard)
   @ApiOperation({ summary: '프롬프트 신규 버전 생성 (ai-service-py 프록시)' })
   async create(@Body() dto: CreatePromptInDto): Promise<unknown> {
     return this.aiServicePy.post({ method: 'prompts', data: dto });
@@ -47,6 +49,7 @@ export class PromptProxyController {
   }
 
   @Patch(':name/:version/activate')
+  @UseGuards(AdminGuard)
   @ApiOperation({ summary: '특정 버전 활성화 (ai-service-py 프록시)' })
   async activate(
     @Param('name') name: string,
