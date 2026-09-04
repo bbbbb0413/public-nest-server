@@ -6,16 +6,18 @@ import { AiServicePyHttpService } from './ai-service-py-http.service';
 import { GatewayAuthGuard } from '../../auth/gateway-auth.guard';
 import { AdminGuard } from '../../auth/admin.guard';
 
+const SESSION_UUID = 'owner-uuid';
+
 describe('PromptProxyController', () => {
   let app: INestApplication;
   let mockAiServicePy: any;
-  let currentUser: any = null;
 
   beforeEach(async () => {
     mockAiServicePy = {
-      post: jest.fn().mockResolvedValue({ id: 'p-1', name: 'rag-qa-system', version: 1 }),
       get: jest.fn().mockResolvedValue([]),
-      patch: jest.fn().mockResolvedValue({ id: 'p-1', name: 'rag-qa-system', version: 1, isActive: true }),
+      post: jest.fn().mockResolvedValue({ version: 1 }),
+      patch: jest.fn().mockResolvedValue({}),
+      delete: jest.fn().mockResolvedValue(undefined),
     };
 
     const moduleFixture: TestingModule = await Test.createTestingModule({

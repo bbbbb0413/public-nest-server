@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
   Param,
   ParseIntPipe,
   Patch,
@@ -44,8 +46,11 @@ export class PromptController {
 
   @Get(':name')
   @ApiOperation({ summary: '특정 이름의 버전 목록 조회' })
-  async list(@Param('name') name: string): Promise<PromptOutDto[]> {
-    const templates = await this.repo.findAllByName(name);
+  async list(
+    @Param('name') name: string,
+    @Query('userId') userId?: string,
+  ): Promise<PromptOutDto[]> {
+    const templates = await this.repo.findAllByName(name, userId);
     return templates.map(PromptOutDto.fromDomain);
   }
 
@@ -64,10 +69,39 @@ export class PromptController {
   async activate(
     @Param('name') name: string,
     @Param('version', ParseIntPipe) version: number,
+    @Query('userId') userId?: string,
   ): Promise<PromptOutDto> {
     const template = await this.activateUseCase.execute(
-      new ActivatePromptCommand(name, version),
+      new ActivatePromptCommand(name, version, userId),
     );
     return PromptOutDto.fromDomain(template);
   }
+
+  @Delete(':name/active')
+  @HttpCode(204)
+  @ApiOperation({ summary: '활성 프롬프트 비활성화' })
+  async deactivateActive(
+    @Param('name') name: string,
+    @Query('userId') userId?: string,
+  ): Promise<void> {
+    if (userId) {
+      await this.repo.deactivateAllForUser(name, userId);
+    } else {
+      await this.repo.deactivateAllByName(name);
+    }
+  }
+
+  @Delete(':name/:version')
+  @HttpCode(204)
+  @ApiOperation({ summary: '특정 버전 프롬프트 삭제' })
+  async deleteVersion(
+    @Param('name') name: string,
+    @Param('version', ParseIntPipe) version: number,
+    @Query('userId') userId?: string,
+  ): Promise<void> {
+    if (this.repo.deleteByNameAndVersion) {
+      await this.repo.deleteByNameAndVersion(name, version, userId);
+    }
+  }
 }
+

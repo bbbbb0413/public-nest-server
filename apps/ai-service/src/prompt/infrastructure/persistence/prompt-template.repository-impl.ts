@@ -43,21 +43,36 @@ export class PromptTemplateRepositoryImpl implements IPromptTemplateRepository {
   async findByNameAndVersion(
     name: string,
     version: number,
+    userId?: string,
   ): Promise<PromptTemplate | null> {
-    const record = await this.collection.findOne({ name, version });
+    const query: any = { name, version };
+    if (userId !== undefined) {
+      query.userId = userId;
+    }
+    const record = await this.collection.findOne(query);
     return record ? this.toDomain(record) : null;
   }
 
-  async findAllByName(name: string): Promise<PromptTemplate[]> {
+  async findAllByName(name: string, userId?: string): Promise<PromptTemplate[]> {
+    const query: any = { name };
+    if (userId !== undefined) {
+      query.userId = userId;
+    } else {
+      query.$or = [{ userId: null }, { userId: { $exists: false } }];
+    }
     const records = await this.collection
-      .find({ name })
+      .find(query)
       .sort({ version: -1 })
       .toArray();
     return records.map((r) => this.toDomain(r));
   }
 
   async findActive(name: string): Promise<PromptTemplate | null> {
-    const record = await this.collection.findOne({ name, isActive: true });
+    const record = await this.collection.findOne({
+      name,
+      isActive: true,
+      $or: [{ userId: null }, { userId: { $exists: false } }],
+    });
     return record ? this.toDomain(record) : null;
   }
 
@@ -75,9 +90,29 @@ export class PromptTemplateRepositoryImpl implements IPromptTemplateRepository {
 
   async deactivateAllByName(name: string): Promise<void> {
     await this.collection.updateMany(
-      { name },
+      { name, $or: [{ userId: null }, { userId: { $exists: false } }] },
       { $set: { isActive: false, updatedAt: new Date() } },
     );
+  }
+
+  async deactivateAllForUser(name: string, userId: string): Promise<void> {
+    await this.collection.updateMany(
+      { name, userId },
+      { $set: { isActive: false, updatedAt: new Date() } },
+    );
+  }
+
+  async deleteByNameAndVersion(
+    name: string,
+    version: number,
+    userId?: string,
+  ): Promise<boolean> {
+    const query: any = { name, version };
+    if (userId !== undefined) {
+      query.userId = userId;
+    }
+    const result = await this.collection.deleteOne(query);
+    return result.deletedCount > 0;
   }
 
   async update(template: PromptTemplate): Promise<PromptTemplate> {
