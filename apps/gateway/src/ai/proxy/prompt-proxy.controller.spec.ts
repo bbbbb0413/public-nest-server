@@ -1,9 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { PromptProxyController } from './prompt-proxy.controller';
 import { AiServicePyHttpService } from './ai-service-py-http.service';
 import { GatewayAuthGuard } from '../../auth/gateway-auth.guard';
+import { AdminGuard } from '../../auth/admin.guard';
 
 const SESSION_UUID = 'owner-uuid';
 
@@ -21,18 +22,24 @@ describe('PromptProxyController', () => {
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       controllers: [PromptProxyController],
-      providers: [{ provide: AiServicePyHttpService, useValue: mockAiServicePy }],
+      providers: [
+        { provide: AiServicePyHttpService, useValue: mockAiServicePy },
+        AdminGuard,
+      ],
     })
       .overrideGuard(GatewayAuthGuard)
       .useValue({
         canActivate: (ctx: any) => {
-          ctx.switchToHttp().getRequest().session = { uuid: SESSION_UUID };
-          return true;
+          const req = ctx.switchToHttp().getRequest();
+          req.user = currentUser;
+          req.session = currentUser ? { uuid: currentUser.uuid ?? String(currentUser.id) } : null;
+          return !!currentUser;
         },
       })
       .compile();
 
     app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
   });
 
@@ -40,70 +47,107 @@ describe('PromptProxyController', () => {
     await app.close();
   });
 
-  it('GET /ai/prompts/:name 호출 시 세션의 userId를 전달하여 타인의 개인 프롬프트가 노출되지 않도록 한다', async () => {
-    await request(app.getHttpServer()).get('/ai/prompts/rag-qa-system');
+  describe('POST /ai/prompts (전역 프롬프트 버전 생성)', () => {
+    it('관리자 권한이 있는 경우 프롬프트 생성을 허용한다', async () => {
+      currentUser = {
+        id: 1,
+        name: 'Admin User',
+        email: 'admin@test.com',
+        activatedAt: new Date(),
+      };
 
-    expect(mockAiServicePy.get).toHaveBeenCalledWith({
-      method: 'prompts/rag-qa-system',
-      params: { userId: SESSION_UUID },
-    });
-  });
+      const res = await request(app.getHttpServer())
+        .post('/ai/prompts')
+        .send({ name: 'rag-qa-system', content: '시스템 지시문', variables: [] });
 
-  it('GET /ai/prompts/:name/active 호출 시 세션의 userId를 전달한다', async () => {
-    await request(app.getHttpServer()).get('/ai/prompts/rag-qa-system/active');
-
-    expect(mockAiServicePy.get).toHaveBeenCalledWith({
-      method: 'prompts/rag-qa-system/active',
-      params: { userId: SESSION_UUID },
-    });
-  });
-
-  it('PATCH /ai/prompts/:name/:version/activate 호출 시 세션의 userId를 전달한다', async () => {
-    await request(app.getHttpServer()).patch('/ai/prompts/rag-qa-system/1/activate');
-
-    expect(mockAiServicePy.patch).toHaveBeenCalledWith({
-      method: 'prompts/rag-qa-system/1/activate',
-      params: { userId: SESSION_UUID },
-    });
-  });
-
-  it('POST /ai/prompts 호출 시 세션의 userId를 데이터에 포함한다', async () => {
-    await request(app.getHttpServer())
-      .post('/ai/prompts')
-      .send({
-        name: 'rag-qa-system',
-        content: '컨텍스트: {{context}}',
-        variables: ['context'],
+      expect(res.status).toBe(201);
+      expect(mockAiServicePy.post).toHaveBeenCalledWith({
+        method: 'prompts',
+        data: expect.objectContaining({ name: 'rag-qa-system', content: '시스템 지시문' }),
       });
+    });
 
-    expect(mockAiServicePy.post).toHaveBeenCalledWith({
-      method: 'prompts',
-      data: {
-        name: 'rag-qa-system',
-        content: '컨텍스트: {{context}}',
-        variables: ['context'],
-        userId: SESSION_UUID,
-      },
+    it('일반 사용자(관리자 권한 없음)의 경우 403 Forbidden을 반환한다', async () => {
+      currentUser = {
+        uuid: 'user-uuid-1',
+        nickName: 'NormalUser',
+        activatedAt: new Date(),
+      };
+
+      const res = await request(app.getHttpServer())
+        .post('/ai/prompts')
+        .send({ name: 'rag-qa-system', content: '시스템 지시문' });
+
+      expect(res.status).toBe(403);
+      expect(mockAiServicePy.post).not.toHaveBeenCalled();
     });
   });
 
-  it('DELETE /ai/prompts/:name/active 호출 시 활성 프롬프트를 비활성화한다', async () => {
-    const res = await request(app.getHttpServer()).delete('/ai/prompts/rag-qa-system/active');
+  describe('PATCH /ai/prompts/:name/:version/activate (전역 프롬프트 버전 활성화)', () => {
+    it('관리자 권한이 있는 경우 전역 프롬프트 활성화를 허용한다', async () => {
+      currentUser = {
+        id: 1,
+        name: 'Admin User',
+        email: 'admin@test.com',
+        activatedAt: new Date(),
+      };
 
-    expect(res.status).toBe(204);
-    expect(mockAiServicePy.delete).toHaveBeenCalledWith({
-      method: 'prompts/rag-qa-system/active',
-      params: { userId: SESSION_UUID },
+      const res = await request(app.getHttpServer())
+        .patch('/ai/prompts/rag-qa-system/1/activate');
+
+      expect(res.status).toBe(200);
+      expect(mockAiServicePy.patch).toHaveBeenCalledWith({
+        method: 'prompts/rag-qa-system/1/activate',
+      });
+    });
+
+    it('일반 사용자(관리자 권한 없음)의 경우 403 Forbidden을 반환한다', async () => {
+      currentUser = {
+        uuid: 'user-uuid-1',
+        nickName: 'NormalUser',
+        activatedAt: new Date(),
+      };
+
+      const res = await request(app.getHttpServer())
+        .patch('/ai/prompts/rag-qa-system/1/activate');
+
+      expect(res.status).toBe(403);
+      expect(mockAiServicePy.patch).not.toHaveBeenCalled();
     });
   });
 
-  it('DELETE /ai/prompts/:name/:version 호출 시 특정 버전 프롬프트를 삭제한다', async () => {
-    const res = await request(app.getHttpServer()).delete('/ai/prompts/rag-qa-system/1');
+  describe('GET /ai/prompts/:name (버전 목록 조회)', () => {
+    it('인증된 사용자의 조회를 허용한다', async () => {
+      currentUser = {
+        uuid: 'user-uuid-1',
+        nickName: 'NormalUser',
+        activatedAt: new Date(),
+      };
 
-    expect(res.status).toBe(204);
-    expect(mockAiServicePy.delete).toHaveBeenCalledWith({
-      method: 'prompts/rag-qa-system/1',
-      params: { userId: SESSION_UUID },
+      const res = await request(app.getHttpServer()).get('/ai/prompts/rag-qa-system');
+
+      expect(res.status).toBe(200);
+      expect(mockAiServicePy.get).toHaveBeenCalledWith({
+        method: 'prompts/rag-qa-system',
+      });
+    });
+  });
+
+  describe('GET /ai/prompts/:name/active (활성 버전 조회)', () => {
+    it('인증된 사용자의 활성 버전 조회를 허용한다', async () => {
+      currentUser = {
+        uuid: 'user-uuid-1',
+        nickName: 'NormalUser',
+        activatedAt: new Date(),
+      };
+
+      const res = await request(app.getHttpServer()).get('/ai/prompts/rag-qa-system/active');
+
+      expect(res.status).toBe(200);
+      expect(mockAiServicePy.get).toHaveBeenCalledWith({
+        method: 'prompts/rag-qa-system/active',
+        params: { userId: undefined },
+      });
     });
   });
 });

@@ -16,6 +16,7 @@ import { RagSessionProxyController } from './proxy/rag-session-proxy.controller'
 import { KnowledgeProxyController } from './proxy/knowledge-proxy.controller';
 import { KnowledgeFileStagingService } from './knowledge/knowledge-file-staging.service';
 import { KnowledgeJobController } from './knowledge/knowledge-job.controller';
+import { AdminGuard } from '../auth/admin.guard';
 
 @Module({
   imports: [AiKafkaClientModule, HttpModule],
@@ -37,6 +38,7 @@ import { KnowledgeJobController } from './knowledge/knowledge-job.controller';
     RedisStreamsRelayService,
     AiServicePyHttpService,
     KnowledgeFileStagingService,
+    AdminGuard,
   ],
 })
 export class AiGatewayModule {}

@@ -14,6 +14,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { Session } from '@libs/shared-kernel';
 import { GatewayAuthGuard } from '../../auth/gateway-auth.guard';
+import { AdminGuard } from '../../auth/admin.guard';
 import { AiServicePyHttpService } from './ai-service-py-http.service';
 import { CreatePromptInDto } from './dto/create-prompt-in.dto';
 
@@ -29,6 +30,7 @@ export class PromptProxyController {
   constructor(private readonly aiServicePy: AiServicePyHttpService) {}
 
   @Post()
+  @UseGuards(AdminGuard)
   @ApiOperation({ summary: '프롬프트 신규 버전 생성 (ai-service-py 프록시)' })
   async create(
     @Req() req: AuthenticatedRequest,
@@ -70,6 +72,7 @@ export class PromptProxyController {
   }
 
   @Patch(':name/:version/activate')
+  @UseGuards(AdminGuard)
   @ApiOperation({ summary: '특정 버전 활성화 (ai-service-py 프록시)' })
   async activate(
     @Param('name') name: string,
