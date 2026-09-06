@@ -8,11 +8,16 @@ import { Metadata } from '@grpc/grpc-js';
 import { CreatePaymentRequest, GetPaymentRequest, ListPaymentsRequest, PaymentReply } from '@libs/rpc';
 import { RpcException } from '@nestjs/microservices';
 
-const mockCreatePaymentUseCase = () => ({
+const mockCreatePaymentUseCase = (): { execute: jest.Mock } => ({
   execute: jest.fn(),
 });
 
-const mockPaymentRepository = () => ({
+const mockPaymentRepository = (): {
+  persist: jest.Mock;
+  findPaymentById: jest.Mock;
+  findAllAndCount: jest.Mock;
+  findPaymentsByUserId: jest.Mock;
+} => ({
   persist: jest.fn(),
   findPaymentById: jest.fn(),
   findAllAndCount: jest.fn(),
@@ -69,8 +74,10 @@ describe('PaymentGrpcController', () => {
 
       expect(createPaymentUseCase.execute).toHaveBeenCalled();
       expect(reply.paymentId).toBe(1);
+      expect(reply.accountId).toBe(100);
       expect(reply.amount).toBe(10000);
       expect(reply.currency).toBe('KRW');
+      expect(reply.productId).toBe('product-001');
     });
   });
 
@@ -89,6 +96,8 @@ describe('PaymentGrpcController', () => {
 
       expect(paymentRepository.findPaymentById).toHaveBeenCalledWith(1);
       expect(reply.paymentId).toBe(1);
+      expect(reply.accountId).toBe(100);
+      expect(reply.productId).toBe('product-001');
       expect(reply.status).toBe(PaymentStatus.COMPLETED);
     });
 
