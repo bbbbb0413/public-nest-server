@@ -11,6 +11,7 @@ const SESSION_UUID = 'owner-uuid';
 describe('PromptProxyController', () => {
   let app: INestApplication;
   let mockAiServicePy: any;
+  let currentUser: any;
 
   beforeEach(async () => {
     mockAiServicePy = {
@@ -98,6 +99,7 @@ describe('PromptProxyController', () => {
       expect(res.status).toBe(200);
       expect(mockAiServicePy.patch).toHaveBeenCalledWith({
         method: 'prompts/rag-qa-system/1/activate',
+        params: { userId: '1' },
       });
     });
 
@@ -117,7 +119,7 @@ describe('PromptProxyController', () => {
   });
 
   describe('GET /ai/prompts/:name (버전 목록 조회)', () => {
-    it('인증된 사용자의 조회를 허용한다', async () => {
+    it('인증된 사용자의 조회를 허용하며 userId를 전달한다', async () => {
       currentUser = {
         uuid: 'user-uuid-1',
         nickName: 'NormalUser',
@@ -129,6 +131,7 @@ describe('PromptProxyController', () => {
       expect(res.status).toBe(200);
       expect(mockAiServicePy.get).toHaveBeenCalledWith({
         method: 'prompts/rag-qa-system',
+        params: { userId: 'user-uuid-1' },
       });
     });
   });
@@ -146,7 +149,43 @@ describe('PromptProxyController', () => {
       expect(res.status).toBe(200);
       expect(mockAiServicePy.get).toHaveBeenCalledWith({
         method: 'prompts/rag-qa-system/active',
-        params: { userId: undefined },
+        params: { userId: 'user-uuid-1' },
+      });
+    });
+  });
+
+  describe('DELETE /ai/prompts/:name/active (활성 버전 비활성화)', () => {
+    it('인증된 사용자의 활성 버전 비활성화를 요청한다', async () => {
+      currentUser = {
+        uuid: 'user-uuid-1',
+        nickName: 'NormalUser',
+        activatedAt: new Date(),
+      };
+
+      const res = await request(app.getHttpServer()).delete('/ai/prompts/rag-qa-system/active');
+
+      expect(res.status).toBe(204);
+      expect(mockAiServicePy.delete).toHaveBeenCalledWith({
+        method: 'prompts/rag-qa-system/active',
+        params: { userId: 'user-uuid-1' },
+      });
+    });
+  });
+
+  describe('DELETE /ai/prompts/:name/:version (특정 버전 삭제)', () => {
+    it('인증된 사용자의 특정 버전 삭제를 요청한다', async () => {
+      currentUser = {
+        uuid: 'user-uuid-1',
+        nickName: 'NormalUser',
+        activatedAt: new Date(),
+      };
+
+      const res = await request(app.getHttpServer()).delete('/ai/prompts/rag-qa-system/1');
+
+      expect(res.status).toBe(204);
+      expect(mockAiServicePy.delete).toHaveBeenCalledWith({
+        method: 'prompts/rag-qa-system/1',
+        params: { userId: 'user-uuid-1' },
       });
     });
   });
