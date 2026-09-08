@@ -1,4 +1,4 @@
-import { User } from '../../libs/auth/src/user/domain/model/user';
+import { User } from '../../apps/admin-server/src/user/domain/model/user';
 
 export const createUserDomainFixture = (
   overrides: Partial<{

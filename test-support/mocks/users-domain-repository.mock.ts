@@ -1,4 +1,4 @@
-import { IUsersRepository } from '../../libs/auth/src/user/domain/repository/users.repository';
+import { IUsersRepository } from '../../apps/admin-server/src/user/domain/repository/users.repository';
 
 export const createUsersDomainRepositoryMock =
   (): jest.Mocked<IUsersRepository> =>
