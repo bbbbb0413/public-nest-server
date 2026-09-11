@@ -58,6 +58,15 @@ describe('RagSessionProxyController', () => {
     });
   });
 
+  it('검색어 keyword 파라미터가 있으면 ai-service-py로 전달한다', async () => {
+    await request(app.getHttpServer()).get('/ai/rag/sessions?keyword=매출&page=1&limit=10');
+
+    expect(mockAiServicePy.get).toHaveBeenCalledWith({
+      method: 'rag/sessions',
+      params: { userId: SESSION_UUID, page: '1', limit: '10', keyword: '매출' },
+    });
+  });
+
   it('검색어 search 파라미터가 오면 q로 정규화하여 전달한다', async () => {
     await request(app.getHttpServer()).get('/ai/rag/sessions?search=검색어');
 
