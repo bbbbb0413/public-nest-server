@@ -39,6 +39,7 @@ export class RagSessionProxyController {
     @Query('q') q?: string,
     @Query('search') search?: string,
     @Query('bookmarked') bookmarked?: string,
+    @Query('keyword') keyword?: string,
   ): Promise<unknown> {
     const query = q ?? search;
     const params: Record<string, string> = { userId: req.session.uuid };
@@ -46,6 +47,7 @@ export class RagSessionProxyController {
     if (limit !== undefined) params.limit = limit;
     if (query !== undefined) params.q = query;
     if (bookmarked !== undefined) params.bookmarked = bookmarked;
+    if (keyword !== undefined) params.keyword = keyword;
 
     return this.aiServicePy.get({
       method: 'rag/sessions',
