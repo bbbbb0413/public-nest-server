@@ -31,6 +31,7 @@ interface TokenResponse {
   token: string;
   uuid: string;
   nickName: string;
+  accountId: number;
 }
 
 @ApiTags('Identity')
@@ -64,6 +65,7 @@ export class IdentityGatewayController implements OnModuleInit {
       token,
       uuid: reply.uuid,
       nickName: reply.nickName,
+      accountId: Number(reply.id),
     });
   }
 
@@ -85,6 +87,7 @@ export class IdentityGatewayController implements OnModuleInit {
       token,
       uuid: reply.uuid,
       nickName: reply.nickName,
+      accountId: Number(reply.id),
     });
   }
 
