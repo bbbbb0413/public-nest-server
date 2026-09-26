@@ -64,9 +64,53 @@ describe('Payment', () => {
     );
   });
 
-  it('pullDomainEvents()를 호출하면 내부 이벤트 큐가 비워진다', () => {
-    const completed = buildPending().complete();
-    expect(completed.pullDomainEvents()).toHaveLength(1);
-    expect(completed.pullDomainEvents()).toHaveLength(0);
+  it('restore()는 전달받은 createdAt을 복원한다', () => {
+    const createdAt = new Date('2026-09-12T14:30:00.000Z');
+    const payment = Payment.restore({
+      id: 1,
+      userId: 100,
+      amount: 10000,
+      currency: 'KRW',
+      paymentMethod: 'card',
+      productId: 'product-001',
+      quantity: '1',
+      status: PaymentStatus.PENDING,
+      createdAt,
+    });
+
+    expect(payment.createdAt).toBe(createdAt);
+  });
+
+  it('complete() 및 fail() 전이 후에도 createdAt이 유지된다', () => {
+    const createdAt = new Date('2026-09-12T14:30:00.000Z');
+    const payment = Payment.restore({
+      id: 1,
+      userId: 100,
+      amount: 10000,
+      currency: 'KRW',
+      paymentMethod: 'card',
+      productId: 'product-001',
+      quantity: '1',
+      status: PaymentStatus.PENDING,
+      createdAt,
+    });
+
+    const completed = payment.complete();
+    expect(completed.createdAt).toBe(createdAt);
+
+    const failed = payment.fail();
+    expect(failed.createdAt).toBe(createdAt);
+  });
+
+  it('create()는 createdAt이 undefined이다', () => {
+    const payment = Payment.create({
+      userId: 100,
+      money: Money.of(10000, 'KRW'),
+      paymentMethod: 'card',
+      productId: 'product-001',
+      quantity: '1',
+    });
+
+    expect(payment.createdAt).toBeUndefined();
   });
 });

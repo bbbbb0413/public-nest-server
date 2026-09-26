@@ -57,6 +57,7 @@ describe('PaymentGatewayController', () => {
         currency: 'KRW',
         productId: 'prod_sword_01',
         status: 'COMPLETED',
+        createdAt: '2026-09-12T14:30:00.000Z',
       };
 
       mockPaymentServiceClient.createPayment.mockReturnValue(of(expectedReply));
@@ -77,6 +78,7 @@ describe('PaymentGatewayController', () => {
       expect((response as any).data).toEqual(expectedReply);
       expect((response as any).data.productId).toBe('prod_sword_01');
       expect((response as any).data.accountId).toBe(42);
+      expect((response as any).data.createdAt).toBe('2026-09-12T14:30:00.000Z');
     });
   });
 
@@ -89,6 +91,7 @@ describe('PaymentGatewayController', () => {
         currency: 'KRW',
         productId: 'prod_shield_01',
         status: 'COMPLETED',
+        createdAt: '2026-09-12T14:30:00.000Z',
       };
 
       mockPaymentServiceClient.getPayment.mockReturnValue(of(expectedReply));
@@ -103,6 +106,7 @@ describe('PaymentGatewayController', () => {
       expect((response as any).data).toEqual(expectedReply);
       expect((response as any).data.productId).toBe('prod_shield_01');
       expect((response as any).data.accountId).toBe(42);
+      expect((response as any).data.createdAt).toBe('2026-09-12T14:30:00.000Z');
     });
   });
 
@@ -117,6 +121,7 @@ describe('PaymentGatewayController', () => {
             currency: 'KRW',
             productId: 'prod_sword_01',
             status: 'COMPLETED',
+            createdAt: '2026-09-12T14:30:00.000Z',
           },
         ],
         page: 1,

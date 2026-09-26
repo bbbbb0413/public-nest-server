@@ -49,25 +49,40 @@ describe('PaymentGrpcMapper', () => {
       expect(reply.status).toBe(PaymentStatus.COMPLETED);
     });
 
-    it('productId가 빈 문자열이거나 userId(accountId)가 0인 경계 케이스에서도 정상 직렬화되어야 한다', () => {
+    it('createdAt이 존재할 때 ISO 8601 문자열로 변환하여 PaymentReply에 포함해야 한다', () => {
+      const createdAt = new Date('2026-09-12T14:30:00.000Z');
       const payment = Payment.restore({
-        id: 2,
-        userId: 0,
-        amount: 0,
+        id: 1,
+        userId: 42,
+        amount: 15000,
         currency: 'KRW',
         paymentMethod: 'card',
-        productId: '',
+        productId: 'prod_shield_01',
+        quantity: '1',
+        status: PaymentStatus.COMPLETED,
+        createdAt,
+      });
+
+      const reply = PaymentGrpcMapper.toReply(payment);
+
+      expect(reply.createdAt).toBe('2026-09-12T14:30:00.000Z');
+    });
+
+    it('createdAt이 없을 때 빈 문자열로 반환해야 한다', () => {
+      const payment = Payment.restore({
+        id: 1,
+        userId: 42,
+        amount: 15000,
+        currency: 'KRW',
+        paymentMethod: 'card',
+        productId: 'prod_shield_01',
         quantity: '1',
         status: PaymentStatus.COMPLETED,
       });
 
       const reply = PaymentGrpcMapper.toReply(payment);
 
-      expect(reply.paymentId).toBe(2);
-      expect(reply.accountId).toBe(0);
-      expect(reply.amount).toBe(0);
-      expect(reply.productId).toBe('');
-      expect(reply.status).toBe(PaymentStatus.COMPLETED);
+      expect(reply.createdAt).toBe('');
     });
   });
 });

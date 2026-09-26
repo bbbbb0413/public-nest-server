@@ -28,4 +28,6 @@ export class PaymentOrmEntity extends AbstractEntity {
 
   @Column({ type: 'varchar', default: PaymentStatus.PENDING })
   status: PaymentStatus;
+
+  createdAt: Date;
 }

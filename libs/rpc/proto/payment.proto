@@ -43,4 +43,5 @@ message PaymentReply {
   string currency = 4;
   string product_id = 5;
   string status = 6;
+  string created_at = 7;
 }

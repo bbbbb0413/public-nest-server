@@ -23,6 +23,7 @@ export class PaymentGrpcMapper {
       currency: payment.money.getCurrency(),
       productId: payment.productId,
       status: payment.status,
+      createdAt: payment.createdAt ? payment.createdAt.toISOString() : '',
     };
   }
 }
