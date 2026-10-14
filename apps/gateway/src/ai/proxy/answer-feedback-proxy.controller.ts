@@ -1,4 +1,15 @@
-import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  ParseIntPipe,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { Session } from '@libs/shared-kernel';
@@ -44,4 +55,19 @@ export class AnswerFeedbackProxyController {
       params: { sessionId, userId: req.session.uuid },
     });
   }
+
+  @Delete()
+  @HttpCode(204)
+  @ApiOperation({ summary: '답변 평가 삭제' })
+  async deleteMine(
+    @Req() req: AuthenticatedRequest,
+    @Query('sessionId') sessionId: string,
+    @Query('turnIndex', ParseIntPipe) turnIndex: number,
+  ): Promise<void> {
+    await this.aiServicePy.delete({
+      method: 'rag/feedback',
+      params: { sessionId, turnIndex, userId: req.session.uuid },
+    });
+  }
 }
+

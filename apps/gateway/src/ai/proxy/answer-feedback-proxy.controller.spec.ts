@@ -15,6 +15,7 @@ describe('AnswerFeedbackProxyController', () => {
     mockAiServicePy = {
       post: jest.fn().mockResolvedValue({ sessionId: 's-1', turnIndex: 1 }),
       get: jest.fn().mockResolvedValue([]),
+      delete: jest.fn().mockResolvedValue(undefined),
     };
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -115,6 +116,38 @@ describe('AnswerFeedbackProxyController', () => {
         method: 'rag/feedback',
         params: { sessionId: 's-1', userId: SESSION_UUID },
       });
+    });
+  });
+
+  describe('DELETE /ai/feedback', () => {
+    it('sessionId와 turnIndex로 내 평가를 삭제하고 204를 반환한다', async () => {
+      const res = await request(app.getHttpServer()).delete(
+        '/ai/feedback?sessionId=s-1&turnIndex=1',
+      );
+
+      expect(res.status).toBe(204);
+      expect(mockAiServicePy.delete).toHaveBeenCalledWith({
+        method: 'rag/feedback',
+        params: { sessionId: 's-1', turnIndex: 1, userId: SESSION_UUID },
+      });
+    });
+
+    it('turnIndex가 숫자가 아니면 400으로 막는다', async () => {
+      const res = await request(app.getHttpServer()).delete(
+        '/ai/feedback?sessionId=s-1&turnIndex=invalid',
+      );
+
+      expect(res.status).toBe(400);
+      expect(mockAiServicePy.delete).not.toHaveBeenCalled();
+    });
+
+    it('turnIndex가 누락되면 400으로 막는다', async () => {
+      const res = await request(app.getHttpServer()).delete(
+        '/ai/feedback?sessionId=s-1',
+      );
+
+      expect(res.status).toBe(400);
+      expect(mockAiServicePy.delete).not.toHaveBeenCalled();
     });
   });
 });
