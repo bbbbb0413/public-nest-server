@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { BadRequestException, INestApplication, NotFoundException, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { AnswerFeedbackProxyController } from './answer-feedback-proxy.controller';
 import { AiServicePyHttpService } from './ai-service-py-http.service';
@@ -148,6 +148,38 @@ describe('AnswerFeedbackProxyController', () => {
 
       expect(res.status).toBe(400);
       expect(mockAiServicePy.delete).not.toHaveBeenCalled();
+    });
+
+    it('다른 사용자의 세션이거나 존재하지 않는 세션/턴으로 ai-service-py가 404를 반환하면 404를 반환한다', async () => {
+      mockAiServicePy.delete.mockRejectedValueOnce(
+        new NotFoundException('피드백 또는 세션을 찾을 수 없습니다'),
+      );
+
+      const res = await request(app.getHttpServer()).delete(
+        '/ai/feedback?sessionId=other-user-session&turnIndex=1',
+      );
+
+      expect(res.status).toBe(404);
+      expect(mockAiServicePy.delete).toHaveBeenCalledWith({
+        method: 'rag/feedback',
+        params: { sessionId: 'other-user-session', turnIndex: 1, userId: SESSION_UUID },
+      });
+    });
+
+    it('ai-service-py에서 400 Bad Request가 발생하면 400을 반환한다', async () => {
+      mockAiServicePy.delete.mockRejectedValueOnce(
+        new BadRequestException('어시스턴트 답변이 아닌 턴입니다'),
+      );
+
+      const res = await request(app.getHttpServer()).delete(
+        '/ai/feedback?sessionId=s-1&turnIndex=0',
+      );
+
+      expect(res.status).toBe(400);
+      expect(mockAiServicePy.delete).toHaveBeenCalledWith({
+        method: 'rag/feedback',
+        params: { sessionId: 's-1', turnIndex: 0, userId: SESSION_UUID },
+      });
     });
   });
 });
