@@ -13,6 +13,7 @@ export class Payment extends AggregateRoot {
     readonly productId: string,
     readonly quantity: string,
     readonly status: PaymentStatus,
+    readonly createdAt?: Date,
   ) {
     super();
   }
@@ -44,6 +45,7 @@ export class Payment extends AggregateRoot {
     productId: string;
     quantity: string;
     status: PaymentStatus;
+    createdAt?: Date;
   }): Payment {
     return new Payment(
       props.id,
@@ -53,6 +55,7 @@ export class Payment extends AggregateRoot {
       props.productId,
       props.quantity,
       props.status,
+      props.createdAt,
     );
   }
 
@@ -70,6 +73,7 @@ export class Payment extends AggregateRoot {
       this.productId,
       this.quantity,
       PaymentStatus.COMPLETED,
+      this.createdAt,
     );
     completed.addDomainEvent(
       new PaymentCompletedEvent({
@@ -97,6 +101,7 @@ export class Payment extends AggregateRoot {
       this.productId,
       this.quantity,
       PaymentStatus.FAILED,
+      this.createdAt,
     );
     failed.addDomainEvent(
       new PaymentFailedEvent({

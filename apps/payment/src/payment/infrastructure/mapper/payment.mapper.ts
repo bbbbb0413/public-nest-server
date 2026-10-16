@@ -12,6 +12,7 @@ export class PaymentMapper {
       productId: orm.productId,
       quantity: orm.quantity,
       status: orm.status,
+      createdAt: orm.createdAt,
     });
   }
 
