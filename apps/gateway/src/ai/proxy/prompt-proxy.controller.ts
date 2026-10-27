@@ -39,6 +39,7 @@ export class PromptProxyController {
   }
 
   @Get(':name')
+  @UseGuards(AdminGuard)
   @ApiOperation({
     summary: '특정 이름의 버전 목록 조회 (ai-service-py 프록시)',
   })
@@ -53,6 +54,7 @@ export class PromptProxyController {
   }
 
   @Get(':name/active')
+  @UseGuards(AdminGuard)
   @ApiOperation({ summary: '현재 활성 버전 조회 (ai-service-py 프록시)' })
   async getActive(
     @Param('name') name: string,
@@ -79,6 +81,7 @@ export class PromptProxyController {
   }
 
   @Delete(':name/active')
+  @UseGuards(AdminGuard)
   @HttpCode(204)
   @ApiOperation({ summary: '활성 프롬프트 비활성화 (ai-service-py 프록시)' })
   async deactivateActive(
@@ -92,6 +95,7 @@ export class PromptProxyController {
   }
 
   @Delete(':name/:version')
+  @UseGuards(AdminGuard)
   @HttpCode(204)
   @ApiOperation({ summary: '특정 버전 프롬프트 삭제 (ai-service-py 프록시)' })
   async deleteVersion(

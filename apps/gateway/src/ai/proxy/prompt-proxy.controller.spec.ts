@@ -168,10 +168,11 @@ describe('PromptProxyController', () => {
   });
 
   describe('GET /ai/prompts/:name (버전 목록 조회)', () => {
-    it('userId 쿼리가 없으면 params 없이 조회를 요청한다', async () => {
+    it('관리자 권한이 있는 경우 userId 쿼리가 없으면 params 없이 조회를 요청한다', async () => {
       currentUser = {
-        uuid: 'user-uuid-1',
-        nickName: 'NormalUser',
+        id: 1,
+        name: 'Admin User',
+        email: 'admin@test.com',
         activatedAt: new Date(),
       };
 
@@ -183,10 +184,11 @@ describe('PromptProxyController', () => {
       });
     });
 
-    it('userId 쿼리가 지정된 경우 params에 userId를 포함하여 전달한다', async () => {
+    it('관리자 권한이 있는 경우 userId 쿼리가 지정되면 params에 userId를 포함하여 전달한다', async () => {
       currentUser = {
-        uuid: 'user-uuid-1',
-        nickName: 'NormalUser',
+        id: 1,
+        name: 'Admin User',
+        email: 'admin@test.com',
         activatedAt: new Date(),
       };
 
@@ -198,13 +200,27 @@ describe('PromptProxyController', () => {
         params: { userId: 'target-user' },
       });
     });
-  });
 
-  describe('GET /ai/prompts/:name/active (활성 버전 조회)', () => {
-    it('userId 쿼리가 없으면 params 없이 조회를 요청한다', async () => {
+    it('일반 사용자(관리자 권한 없음)의 경우 403 Forbidden을 반환한다', async () => {
       currentUser = {
         uuid: 'user-uuid-1',
         nickName: 'NormalUser',
+        activatedAt: new Date(),
+      };
+
+      const res = await request(app.getHttpServer()).get('/ai/prompts/rag-qa-system');
+
+      expect(res.status).toBe(403);
+      expect(mockAiServicePy.get).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('GET /ai/prompts/:name/active (활성 버전 조회)', () => {
+    it('관리자 권한이 있는 경우 userId 쿼리가 없으면 params 없이 조회를 요청한다', async () => {
+      currentUser = {
+        id: 1,
+        name: 'Admin User',
+        email: 'admin@test.com',
         activatedAt: new Date(),
       };
 
@@ -216,10 +232,11 @@ describe('PromptProxyController', () => {
       });
     });
 
-    it('userId 쿼리가 지정된 경우 params에 userId를 포함하여 전달한다', async () => {
+    it('관리자 권한이 있는 경우 userId 쿼리가 지정되면 params에 userId를 포함하여 전달한다', async () => {
       currentUser = {
-        uuid: 'user-uuid-1',
-        nickName: 'NormalUser',
+        id: 1,
+        name: 'Admin User',
+        email: 'admin@test.com',
         activatedAt: new Date(),
       };
 
@@ -231,13 +248,27 @@ describe('PromptProxyController', () => {
         params: { userId: 'target-user' },
       });
     });
-  });
 
-  describe('DELETE /ai/prompts/:name/active (활성 버전 비활성화)', () => {
-    it('userId 쿼리가 없으면 params 없이 활성 버전 비활성화를 요청한다', async () => {
+    it('일반 사용자(관리자 권한 없음)의 경우 403 Forbidden을 반환한다', async () => {
       currentUser = {
         uuid: 'user-uuid-1',
         nickName: 'NormalUser',
+        activatedAt: new Date(),
+      };
+
+      const res = await request(app.getHttpServer()).get('/ai/prompts/rag-qa-system/active');
+
+      expect(res.status).toBe(403);
+      expect(mockAiServicePy.get).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('DELETE /ai/prompts/:name/active (활성 버전 비활성화)', () => {
+    it('관리자 권한이 있는 경우 userId 쿼리가 없으면 params 없이 활성 버전 비활성화를 요청한다', async () => {
+      currentUser = {
+        id: 1,
+        name: 'Admin User',
+        email: 'admin@test.com',
         activatedAt: new Date(),
       };
 
@@ -249,10 +280,11 @@ describe('PromptProxyController', () => {
       });
     });
 
-    it('userId 쿼리가 지정된 경우 params에 userId를 포함하여 전달한다', async () => {
+    it('관리자 권한이 있는 경우 userId 쿼리가 지정되면 params에 userId를 포함하여 전달한다', async () => {
       currentUser = {
-        uuid: 'user-uuid-1',
-        nickName: 'NormalUser',
+        id: 1,
+        name: 'Admin User',
+        email: 'admin@test.com',
         activatedAt: new Date(),
       };
 
@@ -264,13 +296,27 @@ describe('PromptProxyController', () => {
         params: { userId: 'target-user' },
       });
     });
-  });
 
-  describe('DELETE /ai/prompts/:name/:version (특정 버전 삭제)', () => {
-    it('userId 쿼리가 없으면 params 없이 특정 버전 삭제를 요청한다', async () => {
+    it('일반 사용자(관리자 권한 없음)의 경우 403 Forbidden을 반환한다', async () => {
       currentUser = {
         uuid: 'user-uuid-1',
         nickName: 'NormalUser',
+        activatedAt: new Date(),
+      };
+
+      const res = await request(app.getHttpServer()).delete('/ai/prompts/rag-qa-system/active');
+
+      expect(res.status).toBe(403);
+      expect(mockAiServicePy.delete).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('DELETE /ai/prompts/:name/:version (특정 버전 삭제)', () => {
+    it('관리자 권한이 있는 경우 userId 쿼리가 없으면 params 없이 특정 버전 삭제를 요청한다', async () => {
+      currentUser = {
+        id: 1,
+        name: 'Admin User',
+        email: 'admin@test.com',
         activatedAt: new Date(),
       };
 
@@ -282,10 +328,11 @@ describe('PromptProxyController', () => {
       });
     });
 
-    it('userId 쿼리가 지정된 경우 params에 userId를 포함하여 전달한다', async () => {
+    it('관리자 권한이 있는 경우 userId 쿼리가 지정되면 params에 userId를 포함하여 전달한다', async () => {
       currentUser = {
-        uuid: 'user-uuid-1',
-        nickName: 'NormalUser',
+        id: 1,
+        name: 'Admin User',
+        email: 'admin@test.com',
         activatedAt: new Date(),
       };
 
@@ -296,6 +343,19 @@ describe('PromptProxyController', () => {
         method: 'prompts/rag-qa-system/1',
         params: { userId: 'target-user' },
       });
+    });
+
+    it('일반 사용자(관리자 권한 없음)의 경우 403 Forbidden을 반환한다', async () => {
+      currentUser = {
+        uuid: 'user-uuid-1',
+        nickName: 'NormalUser',
+        activatedAt: new Date(),
+      };
+
+      const res = await request(app.getHttpServer()).delete('/ai/prompts/rag-qa-system/1');
+
+      expect(res.status).toBe(403);
+      expect(mockAiServicePy.delete).not.toHaveBeenCalled();
     });
   });
 });
