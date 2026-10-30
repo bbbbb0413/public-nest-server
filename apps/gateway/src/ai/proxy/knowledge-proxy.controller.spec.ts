@@ -100,5 +100,21 @@ describe('KnowledgeProxyController', () => {
         method: 'knowledge/documents/doc-missing/retry',
       });
     });
+
+    it('임베딩 실패 등 ai-service-py에서 500 내부 서버 에러가 발생하면 500 에러를 그대로 전달한다', async () => {
+      const { HttpException } = await import('@nestjs/common');
+      mockAiServicePy.post.mockRejectedValue(
+        new HttpException({ detail: '임베딩 모델 호출 실패' }, 500),
+      );
+
+      const res = await request(app.getHttpServer()).post(
+        '/ai/knowledge/documents/doc-err/retry',
+      );
+
+      expect(res.status).toBe(500);
+      expect(mockAiServicePy.post).toHaveBeenCalledWith({
+        method: 'knowledge/documents/doc-err/retry',
+      });
+    });
   });
 });
