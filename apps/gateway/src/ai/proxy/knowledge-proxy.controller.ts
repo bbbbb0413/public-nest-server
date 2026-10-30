@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   Param,
+  Post,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -46,6 +47,12 @@ export class KnowledgeProxyController {
       res.setHeader('Content-Disposition', file.contentDisposition);
     }
     res.send(file.data);
+  }
+
+  @Post(':id/retry')
+  @ApiOperation({ summary: '문서 재인제스트 (ai-service-py 프록시)' })
+  async retry(@Param('id') id: string): Promise<unknown> {
+    return this.aiServicePy.post({ method: `knowledge/documents/${id}/retry` });
   }
 
   @Delete(':id')
