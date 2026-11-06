@@ -211,6 +211,35 @@ describe('ChatGateway', () => {
           roomId: 'lobby',
           senderUuid: 'user-1',
           content: '테스트 메시지',
+          senderNickname: '유저1',
+        },
+        expect.anything(),
+      );
+    });
+
+    it('사용자 정보에 닉네임이 없는 경우에도 senderNickname에 빈 문자열 또는 undefined로 안전하게 전달해야 한다', async () => {
+      const mockSocket: Partial<Socket> = {
+        id: 'socket-no-nickname',
+        rooms: new Set(['lobby']),
+        data: {
+          user: { uuid: 'user-no-nick', id: 2 },
+        },
+      };
+
+      mockChatServiceClient.saveMessage.mockReturnValue(
+        of({ messageId: 'msg-no-nick', createdAt: Date.now() }),
+      );
+
+      const payload = buildFlatBufferPayload('lobby', '닉네임 없는 유저의 메시지');
+      const result = await gateway.handleSendMessage(mockSocket as Socket, payload);
+
+      expect(result).toEqual({ success: true });
+      expect(mockChatServiceClient.saveMessage).toHaveBeenCalledWith(
+        {
+          roomId: 'lobby',
+          senderUuid: 'user-no-nick',
+          content: '닉네임 없는 유저의 메시지',
+          senderNickname: undefined,
         },
         expect.anything(),
       );
@@ -266,6 +295,111 @@ describe('ChatGateway', () => {
       const result = await gateway.handleSendMessage(mockSocket as Socket, payload);
 
       expect(result).toEqual({ success: false, error: 'gRPC connection error' });
+    });
+  });
+
+  describe('handleJoinRoom', () => {
+    it('roomId가 누락된 경우 실패 응답을 반환해야 한다', async () => {
+      const mockSocket: Partial<Socket> = {
+        id: 'socket-join-1',
+        join: jest.fn(),
+      };
+
+      const result = await gateway.handleJoinRoom(mockSocket as Socket, { roomId: '' });
+      expect(result).toEqual({ success: false, error: 'Invalid roomId' });
+      expect(mockSocket.join).not.toHaveBeenCalled();
+    });
+
+    it('방 입장 시 대화 이력의 senderNickname 필드를 포함하여 반환해야 한다', async () => {
+      const mockSocket: Partial<Socket> = {
+        id: 'socket-join-2',
+        join: jest.fn().mockResolvedValue(undefined),
+      };
+
+      const mockMessages = [
+        {
+          messageId: 'msg-1',
+          senderUuid: 'user-1',
+          content: '첫번째 메시지',
+          createdAt: 1000,
+          senderNickname: '닉네임1',
+        },
+        {
+          messageId: 'msg-2',
+          senderUuid: 'user-2',
+          content: '두번째 메시지',
+          createdAt: 2000,
+          senderNickname: '닉네임2',
+        },
+      ];
+
+      mockChatServiceClient.getMessages.mockReturnValue(
+        of({ messages: mockMessages }),
+      );
+
+      const result = await gateway.handleJoinRoom(mockSocket as Socket, {
+        roomId: 'room-1',
+        historyLimit: 10,
+      });
+
+      expect(mockSocket.join).toHaveBeenCalledWith('room-1');
+      expect(mockChatServiceClient.getMessages).toHaveBeenCalledWith({
+        roomId: 'room-1',
+        limit: 10,
+      });
+      expect(result.success).toBe(true);
+      // reverse되어 오래된 순으로 정렬됨
+      expect(result.messages).toEqual([
+        {
+          messageId: 'msg-2',
+          senderUuid: 'user-2',
+          content: '두번째 메시지',
+          createdAt: 2000,
+          senderNickname: '닉네임2',
+        },
+        {
+          messageId: 'msg-1',
+          senderUuid: 'user-1',
+          content: '첫번째 메시지',
+          createdAt: 1000,
+          senderNickname: '닉네임1',
+        },
+      ]);
+    });
+
+    it('대화 이력에 닉네임이 없는 레거시 메시지가 포함되어 있어도 정상적으로 응답해야 한다', async () => {
+      const mockSocket: Partial<Socket> = {
+        id: 'socket-join-legacy',
+        join: jest.fn().mockResolvedValue(undefined),
+      };
+
+      const mockLegacyMessages = [
+        {
+          messageId: 'msg-legacy-1',
+          senderUuid: 'legacy-user-1',
+          content: '과거 메시지',
+          createdAt: 500,
+          senderNickname: '',
+        },
+      ];
+
+      mockChatServiceClient.getMessages.mockReturnValue(
+        of({ messages: mockLegacyMessages }),
+      );
+
+      const result = await gateway.handleJoinRoom(mockSocket as Socket, {
+        roomId: 'room-legacy',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.messages).toHaveLength(1);
+      expect(result.messages[0]).toEqual({
+        messageId: 'msg-legacy-1',
+        senderUuid: 'legacy-user-1',
+        content: '과거 메시지',
+        createdAt: 500,
+        senderNickname: '',
+      });
     });
   });
 });

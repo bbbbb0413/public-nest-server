@@ -13,6 +13,7 @@ export interface SaveMessageRequest {
   roomId: string;
   senderUuid: string;
   content: string;
+  senderNickname?: string;
 }
 
 export interface SaveMessageResponse {
@@ -23,6 +24,7 @@ export interface SaveMessageResponse {
 export interface GetMessagesRequest {
   roomId: string;
   limit: number;
+  before?: number;
 }
 
 export interface ChatMessage {
@@ -30,6 +32,7 @@ export interface ChatMessage {
   senderUuid: string;
   content: string;
   createdAt: number;
+  senderNickname: string;
 }
 
 export interface GetMessagesResponse {

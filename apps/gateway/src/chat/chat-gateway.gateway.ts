@@ -6,7 +6,6 @@ import { JwtService } from '@nestjs/jwt';
 import { firstValueFrom } from 'rxjs';
 import {
   ChatServiceClient,
-  ChatMessage as ChatMessageReply,
   toMetadata,
   IPubSubPort,
   RedisChatZsetRepository,
@@ -18,6 +17,14 @@ import * as Chat from '@libs/rpc/flatbuffers';
 
 const MAX_PULL_COUNT = 200;
 const DEFAULT_HISTORY_LIMIT = 50;
+
+export interface HistoryMessage {
+  messageId: string;
+  senderUuid: string;
+  content: string;
+  createdAt: number;
+  senderNickname: string;
+}
 
 @WebSocketGateway({
   namespace: '/chat/ws',
@@ -98,13 +105,19 @@ export class ChatGateway
     this.initRoomLastFlushed(roomId);
 
     const limit = data.historyLimit ?? DEFAULT_HISTORY_LIMIT;
-    let messages: ChatMessageReply[] = [];
+    let messages: HistoryMessage[] = [];
     try {
       const reply = await firstValueFrom(
         this.chatService.getMessages({ roomId, limit }),
       );
       // getMessagesBefore는 최신순으로 오므로 화면 표시를 위해 오래된 순으로 뒤집는다
-      messages = [...reply.messages].reverse();
+      messages = [...reply.messages].reverse().map((msg) => ({
+        messageId: msg.messageId,
+        senderUuid: msg.senderUuid,
+        content: msg.content,
+        createdAt: msg.createdAt,
+        senderNickname: msg.senderNickname,
+      }));
     } catch (err: unknown) {
       this.logger.error(`Failed to load chat history for room ${roomId}:`, err);
     }
@@ -249,6 +262,7 @@ export class ChatGateway
             roomId,
             senderUuid: user.uuid,
             content,
+            senderNickname: user.nickName,
           },
           metadata,
         ),
