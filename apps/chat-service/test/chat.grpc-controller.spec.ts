@@ -5,6 +5,7 @@ import { Metadata } from '@grpc/grpc-js';
 import { SaveMessageRequest, SaveMessageResponse, GetMessagesRequest, GetMessagesResponse } from '@libs/rpc';
 import * as flatbuffers from 'flatbuffers';
 import { buildChatMessage } from '../src/flatbuffers/builders';
+import * as Chat from '../src/flatbuffers/generated/chat';
 
 const mockMessageService = () => ({
   persistAndNotify: jest.fn(),
@@ -44,6 +45,28 @@ describe('ChatGrpcController', () => {
       expect(messageService.persistAndNotify).toHaveBeenCalled();
       expect(reply.messageId).toBeDefined();
       expect(reply.createdAt).toBeGreaterThan(0);
+    });
+
+    it('senderNickname이 포함된 gRPC 요청 시 FlatBuffers metadata에 닉네임이 직렬화되어 persistAndNotify로 전달되어야 한다', async () => {
+      messageService.persistAndNotify.mockResolvedValue(undefined);
+
+      const request: SaveMessageRequest = {
+        roomId: 'room-1',
+        senderUuid: 'user-1',
+        content: 'hello',
+        senderNickname: '플레이어A',
+      };
+      const metadata = new Metadata();
+
+      await controller.saveMessage(request, metadata);
+
+      expect(messageService.persistAndNotify).toHaveBeenCalledTimes(1);
+      const [, passedBuffer] = messageService.persistAndNotify.mock.calls[0];
+      const bb = new flatbuffers.ByteBuffer(new Uint8Array(passedBuffer));
+      const chatMsg = Chat.ChatMessage.getRootAsChatMessage(bb);
+      expect(chatMsg.metadata()).toBe('플레이어A');
+      expect(chatMsg.senderId()).toBe('user-1');
+      expect(chatMsg.content()).toBe('hello');
     });
   });
 
@@ -104,6 +127,14 @@ describe('ChatGrpcController', () => {
         limit: 10,
       };
       await controller.getMessages(requestUndefined, new Metadata());
+      expect(messageService.getHistory).toHaveBeenCalledWith('room-1', now * 1000, 10);
+
+      const requestNegative: GetMessagesRequest = {
+        roomId: 'room-1',
+        limit: 10,
+        before: -1,
+      };
+      await controller.getMessages(requestNegative, new Metadata());
       expect(messageService.getHistory).toHaveBeenCalledWith('room-1', now * 1000, 10);
 
       jest.restoreAllMocks();

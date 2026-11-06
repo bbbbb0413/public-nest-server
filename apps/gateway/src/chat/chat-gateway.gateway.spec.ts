@@ -217,6 +217,34 @@ describe('ChatGateway', () => {
       );
     });
 
+    it('사용자 정보에 닉네임이 없는 경우에도 senderNickname에 빈 문자열 또는 undefined로 안전하게 전달해야 한다', async () => {
+      const mockSocket: Partial<Socket> = {
+        id: 'socket-no-nickname',
+        rooms: new Set(['lobby']),
+        data: {
+          user: { uuid: 'user-no-nick', id: 2 },
+        },
+      };
+
+      mockChatServiceClient.saveMessage.mockReturnValue(
+        of({ messageId: 'msg-no-nick', createdAt: Date.now() }),
+      );
+
+      const payload = buildFlatBufferPayload('lobby', '닉네임 없는 유저의 메시지');
+      const result = await gateway.handleSendMessage(mockSocket as Socket, payload);
+
+      expect(result).toEqual({ success: true });
+      expect(mockChatServiceClient.saveMessage).toHaveBeenCalledWith(
+        {
+          roomId: 'lobby',
+          senderUuid: 'user-no-nick',
+          content: '닉네임 없는 유저의 메시지',
+          senderNickname: undefined,
+        },
+        expect.anything(),
+      );
+    });
+
     it('Buffer가 아닌 데이터가 페이로드로 전달된 경우 Invalid FlatBuffer payload 에러를 반환해야 한다', async () => {
       const mockSocket: Partial<Socket> = {
         id: 'socket-invalid-fb',
@@ -337,6 +365,41 @@ describe('ChatGateway', () => {
           senderNickname: '닉네임1',
         },
       ]);
+    });
+
+    it('대화 이력에 닉네임이 없는 레거시 메시지가 포함되어 있어도 정상적으로 응답해야 한다', async () => {
+      const mockSocket: Partial<Socket> = {
+        id: 'socket-join-legacy',
+        join: jest.fn().mockResolvedValue(undefined),
+      };
+
+      const mockLegacyMessages = [
+        {
+          messageId: 'msg-legacy-1',
+          senderUuid: 'legacy-user-1',
+          content: '과거 메시지',
+          createdAt: 500,
+          senderNickname: '',
+        },
+      ];
+
+      mockChatServiceClient.getMessages.mockReturnValue(
+        of({ messages: mockLegacyMessages }),
+      );
+
+      const result = await gateway.handleJoinRoom(mockSocket as Socket, {
+        roomId: 'room-legacy',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.messages).toHaveLength(1);
+      expect(result.messages[0]).toEqual({
+        messageId: 'msg-legacy-1',
+        senderUuid: 'legacy-user-1',
+        content: '과거 메시지',
+        createdAt: 500,
+        senderNickname: '',
+      });
     });
   });
 });
