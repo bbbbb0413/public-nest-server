@@ -211,6 +211,7 @@ describe('ChatGateway', () => {
           roomId: 'lobby',
           senderUuid: 'user-1',
           content: '테스트 메시지',
+          senderNickname: '유저1',
         },
         expect.anything(),
       );
@@ -266,6 +267,76 @@ describe('ChatGateway', () => {
       const result = await gateway.handleSendMessage(mockSocket as Socket, payload);
 
       expect(result).toEqual({ success: false, error: 'gRPC connection error' });
+    });
+  });
+
+  describe('handleJoinRoom', () => {
+    it('roomId가 누락된 경우 실패 응답을 반환해야 한다', async () => {
+      const mockSocket: Partial<Socket> = {
+        id: 'socket-join-1',
+        join: jest.fn(),
+      };
+
+      const result = await gateway.handleJoinRoom(mockSocket as Socket, { roomId: '' });
+      expect(result).toEqual({ success: false, error: 'Invalid roomId' });
+      expect(mockSocket.join).not.toHaveBeenCalled();
+    });
+
+    it('방 입장 시 대화 이력의 senderNickname 필드를 포함하여 반환해야 한다', async () => {
+      const mockSocket: Partial<Socket> = {
+        id: 'socket-join-2',
+        join: jest.fn().mockResolvedValue(undefined),
+      };
+
+      const mockMessages = [
+        {
+          messageId: 'msg-1',
+          senderUuid: 'user-1',
+          content: '첫번째 메시지',
+          createdAt: 1000,
+          senderNickname: '닉네임1',
+        },
+        {
+          messageId: 'msg-2',
+          senderUuid: 'user-2',
+          content: '두번째 메시지',
+          createdAt: 2000,
+          senderNickname: '닉네임2',
+        },
+      ];
+
+      mockChatServiceClient.getMessages.mockReturnValue(
+        of({ messages: mockMessages }),
+      );
+
+      const result = await gateway.handleJoinRoom(mockSocket as Socket, {
+        roomId: 'room-1',
+        historyLimit: 10,
+      });
+
+      expect(mockSocket.join).toHaveBeenCalledWith('room-1');
+      expect(mockChatServiceClient.getMessages).toHaveBeenCalledWith({
+        roomId: 'room-1',
+        limit: 10,
+      });
+      expect(result.success).toBe(true);
+      // reverse되어 오래된 순으로 정렬됨
+      expect(result.messages).toEqual([
+        {
+          messageId: 'msg-2',
+          senderUuid: 'user-2',
+          content: '두번째 메시지',
+          createdAt: 2000,
+          senderNickname: '닉네임2',
+        },
+        {
+          messageId: 'msg-1',
+          senderUuid: 'user-1',
+          content: '첫번째 메시지',
+          createdAt: 1000,
+          senderNickname: '닉네임1',
+        },
+      ]);
     });
   });
 });

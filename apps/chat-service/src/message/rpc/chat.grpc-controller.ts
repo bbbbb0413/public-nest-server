@@ -44,9 +44,14 @@ export class ChatGrpcController implements ChatServiceController {
     request: GetMessagesRequest,
     metadata: Metadata,
   ): Promise<GetMessagesResponse> {
+    const beforeTimestamp =
+      request.before && Number(request.before) > 0
+        ? Number(request.before)
+        : Date.now() * 1000;
+
     const buffers = await this.messageService.getHistory(
       request.roomId,
-      Date.now() * 1000,
+      beforeTimestamp,
       request.limit,
     );
 

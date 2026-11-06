@@ -1,4 +1,4 @@
-import { SaveMessageRequest, SaveMessageResponse, GetMessagesResponse, ChatMessage } from '@libs/rpc';
+import { SaveMessageRequest, GetMessagesResponse, ChatMessage } from '@libs/rpc';
 import * as flatbuffers from 'flatbuffers';
 import { buildChatMessage } from '../../flatbuffers/builders';
 import * as Chat from '../../flatbuffers/generated/chat';
@@ -15,7 +15,7 @@ export class ChatGrpcMapper {
       Chat.MessageStatus.NORMAL,
       request.senderUuid,
       request.content,
-      '', // metadata
+      request.senderNickname || '', // metadata
       timestamp,
       eventTimestamp,
     );
@@ -31,6 +31,7 @@ export class ChatGrpcMapper {
         senderUuid: chatMsg.senderId() || '',
         content: chatMsg.content() || '',
         createdAt: Number(chatMsg.timestamp()),
+        senderNickname: chatMsg.metadata() || '',
       };
     });
 
