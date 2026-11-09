@@ -48,6 +48,73 @@ describe('KnowledgeProxyController', () => {
       expect(mockAiServicePy.getBinary).toHaveBeenCalledWith('knowledge/documents/doc-1/file');
     });
 
+    it('Content-Disposition이 누락되었으면 기본 파일명(filename="{id}")을 보완한다', async () => {
+      mockAiServicePy.getBinary.mockResolvedValue({
+        data: Buffer.from('binary-content'),
+        contentType: 'application/pdf',
+        contentDisposition: undefined,
+      });
+
+      const res = await request(app.getHttpServer()).get('/ai/knowledge/documents/doc-test-123/file');
+
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toContain('application/pdf');
+      expect(res.headers['content-disposition']).toBe('inline; filename="doc-test-123"');
+      expect(res.body).toEqual(Buffer.from('binary-content'));
+    });
+
+    it('Content-Disposition에 filename 파라미터가 없으면 기본 파일명(filename="{id}")을 보완한다', async () => {
+      mockAiServicePy.getBinary.mockResolvedValue({
+        data: Buffer.from('sample content'),
+        contentType: 'text/plain',
+        contentDisposition: 'attachment',
+      });
+
+      const res = await request(app.getHttpServer()).get('/ai/knowledge/documents/doc-456/file');
+
+      expect(res.status).toBe(200);
+      expect(res.headers['content-disposition']).toBe('attachment; filename="doc-456"');
+    });
+
+    it('Content-Disposition 파일명에 경로 조작이나 안전하지 않은 문자가 포함되어 있으면 기본 파일명으로 대체한다', async () => {
+      mockAiServicePy.getBinary.mockResolvedValue({
+        data: Buffer.from('safe content'),
+        contentType: 'application/octet-stream',
+        contentDisposition: 'inline; filename="../../etc/passwd"',
+      });
+
+      const res = await request(app.getHttpServer()).get('/ai/knowledge/documents/doc-safe/file');
+
+      expect(res.status).toBe(200);
+      expect(res.headers['content-disposition']).toBe('inline; filename="doc-safe"');
+    });
+
+    it('Content-Disposition에 개행(CRLF) 인젝션 시도가 있으면 기본 파일명으로 대체한다', async () => {
+      mockAiServicePy.getBinary.mockResolvedValue({
+        data: Buffer.from('safe content'),
+        contentType: 'text/plain',
+        contentDisposition: 'inline; filename="a.txt\r\nInjected: malicious"',
+      });
+
+      const res = await request(app.getHttpServer()).get('/ai/knowledge/documents/doc-safe/file');
+
+      expect(res.status).toBe(200);
+      expect(res.headers['content-disposition']).toBe('inline; filename="doc-safe"');
+    });
+
+    it('Content-Type이 누락되었거나 비어있으면 기본 Content-Type(application/octet-stream)을 설정한다', async () => {
+      mockAiServicePy.getBinary.mockResolvedValue({
+        data: Buffer.from('content'),
+        contentType: '',
+        contentDisposition: 'inline; filename="doc.bin"',
+      });
+
+      const res = await request(app.getHttpServer()).get('/ai/knowledge/documents/doc-empty-type/file');
+
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toContain('application/octet-stream');
+    });
+
     it('원본이 없으면 ai-service-py가 던진 404를 그대로 전달한다', async () => {
       const { HttpException } = await import('@nestjs/common');
       mockAiServicePy.getBinary.mockRejectedValue(
