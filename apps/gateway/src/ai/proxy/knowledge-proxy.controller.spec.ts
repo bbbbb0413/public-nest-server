@@ -102,6 +102,48 @@ describe('KnowledgeProxyController', () => {
       expect(res.headers['content-disposition']).toBe('inline; filename="doc-safe"');
     });
 
+    it('Content-Disposition에 RFC 5987 UTF-8 인코딩 파일명(filename*=UTF-8\'\'...)이 포함된 경우 원본 헤더를 온전히 유지한다', async () => {
+      const utf8Header = "inline; filename*=UTF-8''%ED%85%8C%EC%8A%A4%ED%8A%B8%EB%AC%B8%EC%84%9C.pdf";
+      mockAiServicePy.getBinary.mockResolvedValue({
+        data: Buffer.from('utf8 content'),
+        contentType: 'application/pdf',
+        contentDisposition: utf8Header,
+      });
+
+      const res = await request(app.getHttpServer()).get('/ai/knowledge/documents/doc-utf8/file');
+
+      expect(res.status).toBe(200);
+      expect(res.headers['content-disposition']).toBe(utf8Header);
+    });
+
+    it('id 파라미터에 따옴표나 역슬래시 문자가 포함되어 있고 Content-Disposition이 없으면 safeId로 치환된 기본 파일명을 생성한다', async () => {
+      mockAiServicePy.getBinary.mockResolvedValue({
+        data: Buffer.from('content'),
+        contentType: 'application/octet-stream',
+        contentDisposition: undefined,
+      });
+
+      const res = await request(app.getHttpServer()).get(
+        '/ai/knowledge/documents/doc%22%5Cunsafe/file',
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.headers['content-disposition']).toBe('inline; filename="doc__unsafe"');
+    });
+
+    it('Content-Disposition 타입이 attachment이고 파일명에 경로 조작이 포함되어 있으면 attachment 타입을 유지하며 기본 파일명으로 대체한다', async () => {
+      mockAiServicePy.getBinary.mockResolvedValue({
+        data: Buffer.from('attachment content'),
+        contentType: 'application/pdf',
+        contentDisposition: 'attachment; filename="../secret.pdf"',
+      });
+
+      const res = await request(app.getHttpServer()).get('/ai/knowledge/documents/doc-attach/file');
+
+      expect(res.status).toBe(200);
+      expect(res.headers['content-disposition']).toBe('attachment; filename="doc-attach"');
+    });
+
     it('Content-Type이 누락되었거나 비어있으면 기본 Content-Type(application/octet-stream)을 설정한다', async () => {
       mockAiServicePy.getBinary.mockResolvedValue({
         data: Buffer.from('content'),
