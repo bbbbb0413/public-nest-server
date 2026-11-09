@@ -42,11 +42,64 @@ export class KnowledgeProxyController {
   @ApiOperation({ summary: '문서 원본 파일 다운로드 (ai-service-py 프록시)' })
   async getFile(@Param('id') id: string, @Res() res: Response): Promise<void> {
     const file = await this.aiServicePy.getBinary(`knowledge/documents/${id}/file`);
-    res.setHeader('Content-Type', file.contentType);
-    if (file.contentDisposition) {
-      res.setHeader('Content-Disposition', file.contentDisposition);
-    }
+    res.setHeader('Content-Type', file.contentType || 'application/octet-stream');
+    res.setHeader(
+      'Content-Disposition',
+      this.resolveContentDisposition(file.contentDisposition, id),
+    );
     res.send(file.data);
+  }
+
+  /**
+   * Content-Disposition 헤더가 누락되었거나 안전하지 않은 경우 기본 파일명(filename="{id}")을 보완한다.
+   */
+  private resolveContentDisposition(
+    contentDisposition: string | undefined,
+    id: string,
+  ): string {
+    const safeId = id.replace(/["\r\n/\\]/g, '_');
+    const defaultDisposition = `inline; filename="${safeId}"`;
+
+    if (!contentDisposition || !contentDisposition.trim()) {
+      return defaultDisposition;
+    }
+
+    // CRLF 헤더 인젝션 방지
+    if (/[\r\n]/.test(contentDisposition)) {
+      return defaultDisposition;
+    }
+
+    const trimmed = contentDisposition.trim();
+    const filenameMatch = trimmed.match(/filename\*?=(?:(?:"([^"]*)")|([^;]+))/i);
+
+    if (!filenameMatch) {
+      const dispositionType = trimmed.split(';')[0].trim();
+      const safeType =
+        dispositionType.toLowerCase() === 'attachment' ? 'attachment' : 'inline';
+      return `${safeType}; filename="${safeId}"`;
+    }
+
+    const rawFilename = (filenameMatch[1] ?? filenameMatch[2] ?? '').trim();
+    const hasControlChar = Array.from(rawFilename).some((ch) => {
+      const code = ch.charCodeAt(0);
+      return (code >= 0 && code <= 31) || code === 127;
+    });
+
+    const isUnsafe =
+      rawFilename.length === 0 ||
+      rawFilename.includes('..') ||
+      rawFilename.includes('/') ||
+      rawFilename.includes('\\') ||
+      hasControlChar;
+
+    if (isUnsafe) {
+      const dispositionType = trimmed.split(';')[0].trim();
+      const safeType =
+        dispositionType.toLowerCase() === 'attachment' ? 'attachment' : 'inline';
+      return `${safeType}; filename="${safeId}"`;
+    }
+
+    return trimmed;
   }
 
   @Post(':id/retry')
