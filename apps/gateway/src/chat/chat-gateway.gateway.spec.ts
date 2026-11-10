@@ -587,5 +587,119 @@ describe('ChatGateway', () => {
 
       expect(result).toEqual({ success: false, error: 'gRPC fetch failed' });
     });
+
+    it('data 페이로드가 null 또는 undefined인 경우 크래시 없이 Invalid roomId를 반환해야 한다', async () => {
+      const mockSocket: Partial<Socket> = {
+        id: 'socket-fetch-8',
+        rooms: new Set(['room-1']),
+      };
+
+      const result1 = await gateway.handleFetchHistory(mockSocket as Socket, null as any);
+      expect(result1).toEqual({ success: false, error: 'Invalid roomId' });
+
+      const result2 = await gateway.handleFetchHistory(mockSocket as Socket, undefined as any);
+      expect(result2).toEqual({ success: false, error: 'Invalid roomId' });
+    });
+
+    it('before 타임스탬프가 0 이하(0 또는 음수)인 경우 유효하지 않은 타임스탬프로 거부해야 한다', async () => {
+      const mockSocket: Partial<Socket> = {
+        id: 'socket-fetch-9',
+        rooms: new Set(['room-1']),
+      };
+
+      const resultZero = await gateway.handleFetchHistory(mockSocket as Socket, {
+        roomId: 'room-1',
+        before: 0,
+      });
+      expect(resultZero).toEqual({ success: false, error: 'Invalid before timestamp' });
+
+      const resultNegative = await gateway.handleFetchHistory(mockSocket as Socket, {
+        roomId: 'room-1',
+        before: -1000,
+      });
+      expect(resultNegative).toEqual({ success: false, error: 'Invalid before timestamp' });
+    });
+
+    it('client.rooms가 undefined인 소켓 클라이언트 요청 시 join_room required를 반환해야 한다', async () => {
+      const mockSocket: Partial<Socket> = {
+        id: 'socket-fetch-10',
+        rooms: undefined,
+      };
+
+      const result = await gateway.handleFetchHistory(mockSocket as Socket, {
+        roomId: 'room-1',
+        before: 1700000000,
+      });
+
+      expect(result).toEqual({ success: false, error: 'join_room required' });
+    });
+
+    it('수용 기준 3: 과거 메시지 10건 조회 시 시간순(오래된 순) 정렬 및 hasMore: false를 반환해야 한다', async () => {
+      const mockSocket: Partial<Socket> = {
+        id: 'socket-fetch-11',
+        rooms: new Set(['room-1']),
+      };
+
+      // 최신순으로 반환되는 10건의 모의 메시지 (timestamp 10 down to 1)
+      const mock10Messages = Array.from({ length: 10 }, (_, i) => ({
+        messageId: `msg-${10 - i}`,
+        senderUuid: `user-${10 - i}`,
+        content: `과거 메시지 ${10 - i}`,
+        createdAt: (10 - i) * 1000,
+        senderNickname: `유저${10 - i}`,
+      }));
+
+      mockChatServiceClient.getMessages.mockReturnValue(
+        of({ messages: mock10Messages }),
+      );
+
+      const result = await gateway.handleFetchHistory(mockSocket as Socket, {
+        roomId: 'room-1',
+        before: 20000,
+      });
+
+      expect(mockChatServiceClient.getMessages).toHaveBeenCalledWith({
+        roomId: 'room-1',
+        limit: 50,
+        before: 20000,
+      });
+      expect(result.success).toBe(true);
+      expect(result.hasMore).toBe(false);
+      expect(result.messages).toHaveLength(10);
+      // 오래된 순으로 정렬되었는지 검증 (1번부터 10번 순서)
+      expect(result.messages?.[0].messageId).toBe('msg-1');
+      expect(result.messages?.[9].messageId).toBe('msg-10');
+      expect(result.messages?.[0].createdAt).toBe(1000);
+      expect(result.messages?.[9].createdAt).toBe(10000);
+    });
+
+    it('수용 기준 4: 방에 총 메시지가 5건인 경우 hasMore가 false로 반환되어야 한다', async () => {
+      const mockSocket: Partial<Socket> = {
+        id: 'socket-fetch-12',
+        rooms: new Set(['room-1']),
+      };
+
+      const mock5Messages = Array.from({ length: 5 }, (_, i) => ({
+        messageId: `msg-${5 - i}`,
+        senderUuid: `user-${5 - i}`,
+        content: `메시지 ${5 - i}`,
+        createdAt: (5 - i) * 1000,
+        senderNickname: `유저${5 - i}`,
+      }));
+
+      mockChatServiceClient.getMessages.mockReturnValue(
+        of({ messages: mock5Messages }),
+      );
+
+      const result = await gateway.handleFetchHistory(mockSocket as Socket, {
+        roomId: 'room-1',
+        before: 10000,
+        limit: 20,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.hasMore).toBe(false);
+      expect(result.messages).toHaveLength(5);
+    });
   });
 });

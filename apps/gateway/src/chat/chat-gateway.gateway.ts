@@ -145,7 +145,7 @@ export class ChatGateway
       return { success: false, error: 'Invalid roomId' };
     }
 
-    if (typeof before !== 'number' || Number.isNaN(before)) {
+    if (typeof before !== 'number' || Number.isNaN(before) || before <= 0) {
       return { success: false, error: 'Invalid before timestamp' };
     }
 
@@ -153,7 +153,7 @@ export class ChatGateway
       return { success: false, error: 'join_room required' };
     }
 
-    const limit = data.limit ?? DEFAULT_HISTORY_LIMIT;
+    const limit = data?.limit ?? DEFAULT_HISTORY_LIMIT;
     try {
       const reply = await firstValueFrom(
         this.chatService.getMessages({ roomId, limit, before }),
