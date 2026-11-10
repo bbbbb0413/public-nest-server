@@ -135,6 +135,46 @@ export class ChatGateway
     return { success: true };
   }
 
+  @SubscribeMessage('fetch_history')
+  async handleFetchHistory(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { roomId: string; before: number; limit?: number },
+  ): Promise<{ success: boolean; messages?: HistoryMessage[]; hasMore?: boolean; error?: string }> {
+    const { roomId, before } = data ?? {};
+    if (!roomId) {
+      return { success: false, error: 'Invalid roomId' };
+    }
+
+    if (typeof before !== 'number' || Number.isNaN(before)) {
+      return { success: false, error: 'Invalid before timestamp' };
+    }
+
+    if (!client.rooms || !client.rooms.has(roomId)) {
+      return { success: false, error: 'join_room required' };
+    }
+
+    const limit = data.limit ?? DEFAULT_HISTORY_LIMIT;
+    try {
+      const reply = await firstValueFrom(
+        this.chatService.getMessages({ roomId, limit, before }),
+      );
+      const rawMessages = reply?.messages ?? [];
+      const hasMore = rawMessages.length >= limit;
+      const messages: HistoryMessage[] = [...rawMessages].reverse().map((msg) => ({
+        messageId: msg.messageId,
+        senderUuid: msg.senderUuid,
+        content: msg.content,
+        createdAt: msg.createdAt,
+        senderNickname: msg.senderNickname,
+      }));
+
+      return { success: true, messages, hasMore };
+    } catch (err: any) {
+      this.logger.error(`Failed to fetch chat history for room ${roomId}:`, err);
+      return { success: false, error: err?.message || 'Failed to fetch history' };
+    }
+  }
+
   /**
    * 방별 처리 큐 (동시 알림 중복 pull 방지)
    */

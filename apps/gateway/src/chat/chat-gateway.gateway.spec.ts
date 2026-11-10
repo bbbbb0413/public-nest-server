@@ -402,4 +402,190 @@ describe('ChatGateway', () => {
       });
     });
   });
+
+  describe('handleFetchHistory', () => {
+    it('roomId가 누락되었거나 유효하지 않은 경우 실패 응답을 반환해야 한다', async () => {
+      const mockSocket: Partial<Socket> = {
+        id: 'socket-fetch-1',
+        rooms: new Set(['room-1']),
+      };
+
+      const result = await gateway.handleFetchHistory(mockSocket as Socket, {
+        roomId: '',
+        before: 1700000000,
+      });
+
+      expect(result).toEqual({ success: false, error: 'Invalid roomId' });
+      expect(mockChatServiceClient.getMessages).not.toHaveBeenCalled();
+    });
+
+    it('before 타임스탬프가 누락되었거나 유효하지 않은 경우 실패 응답을 반환해야 한다', async () => {
+      const mockSocket: Partial<Socket> = {
+        id: 'socket-fetch-2',
+        rooms: new Set(['room-1']),
+      };
+
+      const result1 = await gateway.handleFetchHistory(mockSocket as Socket, {
+        roomId: 'room-1',
+        before: undefined as any,
+      });
+      expect(result1).toEqual({ success: false, error: 'Invalid before timestamp' });
+
+      const result2 = await gateway.handleFetchHistory(mockSocket as Socket, {
+        roomId: 'room-1',
+        before: NaN,
+      });
+      expect(result2).toEqual({ success: false, error: 'Invalid before timestamp' });
+      expect(mockChatServiceClient.getMessages).not.toHaveBeenCalled();
+    });
+
+    it('방에 입장하지 않은 소켓 클라이언트가 요청한 경우 join_room required 실패 응답을 반환해야 한다', async () => {
+      const mockSocket: Partial<Socket> = {
+        id: 'socket-fetch-3',
+        rooms: new Set(['other-room']),
+      };
+
+      const result = await gateway.handleFetchHistory(mockSocket as Socket, {
+        roomId: 'room-1',
+        before: 1700000000,
+      });
+
+      expect(result).toEqual({ success: false, error: 'join_room required' });
+      expect(mockChatServiceClient.getMessages).not.toHaveBeenCalled();
+    });
+
+    it('before 타임스탬프와 limit을 gRPC getMessages에 올바르게 전달해야 한다 (limit 미지정 시 기본값 50)', async () => {
+      const mockSocket: Partial<Socket> = {
+        id: 'socket-fetch-4',
+        rooms: new Set(['room-1']),
+      };
+
+      mockChatServiceClient.getMessages.mockReturnValue(
+        of({ messages: [] }),
+      );
+
+      const result = await gateway.handleFetchHistory(mockSocket as Socket, {
+        roomId: 'room-1',
+        before: 1700000000,
+      });
+
+      expect(mockChatServiceClient.getMessages).toHaveBeenCalledWith({
+        roomId: 'room-1',
+        limit: 50,
+        before: 1700000000,
+      });
+      expect(result).toEqual({
+        success: true,
+        messages: [],
+        hasMore: false,
+      });
+    });
+
+    it('조회된 메시지를 오래된 순으로 정렬하고 조회 수가 limit 이상인 경우 hasMore를 true로 반환해야 한다', async () => {
+      const mockSocket: Partial<Socket> = {
+        id: 'socket-fetch-5',
+        rooms: new Set(['room-1']),
+      };
+
+      const mockMessages = [
+        {
+          messageId: 'msg-2',
+          senderUuid: 'user-2',
+          content: '최신 과거 메시지',
+          createdAt: 2000,
+          senderNickname: '닉네임2',
+        },
+        {
+          messageId: 'msg-1',
+          senderUuid: 'user-1',
+          content: '가장 오래된 메시지',
+          createdAt: 1000,
+          senderNickname: '닉네임1',
+        },
+      ];
+
+      mockChatServiceClient.getMessages.mockReturnValue(
+        of({ messages: mockMessages }),
+      );
+
+      const result = await gateway.handleFetchHistory(mockSocket as Socket, {
+        roomId: 'room-1',
+        before: 3000,
+        limit: 2,
+      });
+
+      expect(mockChatServiceClient.getMessages).toHaveBeenCalledWith({
+        roomId: 'room-1',
+        limit: 2,
+        before: 3000,
+      });
+      expect(result.success).toBe(true);
+      expect(result.hasMore).toBe(true);
+      expect(result.messages).toEqual([
+        {
+          messageId: 'msg-1',
+          senderUuid: 'user-1',
+          content: '가장 오래된 메시지',
+          createdAt: 1000,
+          senderNickname: '닉네임1',
+        },
+        {
+          messageId: 'msg-2',
+          senderUuid: 'user-2',
+          content: '최신 과거 메시지',
+          createdAt: 2000,
+          senderNickname: '닉네임2',
+        },
+      ]);
+    });
+
+    it('조회된 메시지 수가 limit 미만인 경우 hasMore를 false로 반환해야 한다', async () => {
+      const mockSocket: Partial<Socket> = {
+        id: 'socket-fetch-6',
+        rooms: new Set(['room-1']),
+      };
+
+      const mockMessages = [
+        {
+          messageId: 'msg-1',
+          senderUuid: 'user-1',
+          content: '단일 과거 메시지',
+          createdAt: 1000,
+          senderNickname: '닉네임1',
+        },
+      ];
+
+      mockChatServiceClient.getMessages.mockReturnValue(
+        of({ messages: mockMessages }),
+      );
+
+      const result = await gateway.handleFetchHistory(mockSocket as Socket, {
+        roomId: 'room-1',
+        before: 3000,
+        limit: 10,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.hasMore).toBe(false);
+      expect(result.messages).toHaveLength(1);
+    });
+
+    it('gRPC getMessages 호출 실패 시 실패 응답을 반환해야 한다', async () => {
+      const mockSocket: Partial<Socket> = {
+        id: 'socket-fetch-7',
+        rooms: new Set(['room-1']),
+      };
+
+      mockChatServiceClient.getMessages.mockReturnValue(
+        throwError(() => new Error('gRPC fetch failed')),
+      );
+
+      const result = await gateway.handleFetchHistory(mockSocket as Socket, {
+        roomId: 'room-1',
+        before: 1700000000,
+      });
+
+      expect(result).toEqual({ success: false, error: 'gRPC fetch failed' });
+    });
+  });
 });
