@@ -454,7 +454,7 @@ describe('ChatGateway', () => {
       expect(mockChatServiceClient.getMessages).not.toHaveBeenCalled();
     });
 
-    it('before 타임스탬프와 limit을 gRPC getMessages에 올바르게 전달해야 한다 (limit 미지정 시 기본값 50)', async () => {
+    it('before 타임스탬프와 limit을 gRPC getMessages에 올바르게 전달해야 한다 (밀리초(ms)를 마이크로초(μs)로 변환, limit 미지정 시 기본값 50)', async () => {
       const mockSocket: Partial<Socket> = {
         id: 'socket-fetch-4',
         rooms: new Set(['room-1']),
@@ -464,20 +464,44 @@ describe('ChatGateway', () => {
         of({ messages: [] }),
       );
 
+      const beforeMs = 1700000000123;
       const result = await gateway.handleFetchHistory(mockSocket as Socket, {
         roomId: 'room-1',
-        before: 1700000000,
+        before: beforeMs,
       });
 
       expect(mockChatServiceClient.getMessages).toHaveBeenCalledWith({
         roomId: 'room-1',
         limit: 50,
-        before: 1700000000,
+        before: beforeMs * 1000,
       });
       expect(result).toEqual({
         success: true,
         messages: [],
         hasMore: false,
+      });
+    });
+
+    it('before 커서의 밀리초(ms) 타임스탬프를 마이크로초(μs, ms * 1000) 단위로 변환하여 gRPC getMessages에 전달해야 한다', async () => {
+      const mockSocket: Partial<Socket> = {
+        id: 'socket-fetch-unit-conversion',
+        rooms: new Set(['room-1']),
+      };
+
+      mockChatServiceClient.getMessages.mockReturnValue(
+        of({ messages: [] }),
+      );
+
+      const timestampMs = 1715000000000;
+      await gateway.handleFetchHistory(mockSocket as Socket, {
+        roomId: 'room-1',
+        before: timestampMs,
+      });
+
+      expect(mockChatServiceClient.getMessages).toHaveBeenCalledWith({
+        roomId: 'room-1',
+        limit: 50,
+        before: timestampMs * 1000,
       });
     });
 
@@ -517,7 +541,7 @@ describe('ChatGateway', () => {
       expect(mockChatServiceClient.getMessages).toHaveBeenCalledWith({
         roomId: 'room-1',
         limit: 2,
-        before: 3000,
+        before: 3000 * 1000,
       });
       expect(result.success).toBe(true);
       expect(result.hasMore).toBe(true);
@@ -661,7 +685,7 @@ describe('ChatGateway', () => {
       expect(mockChatServiceClient.getMessages).toHaveBeenCalledWith({
         roomId: 'room-1',
         limit: 50,
-        before: 20000,
+        before: 20000 * 1000,
       });
       expect(result.success).toBe(true);
       expect(result.hasMore).toBe(false);

@@ -155,8 +155,9 @@ export class ChatGateway
 
     const limit = data?.limit ?? DEFAULT_HISTORY_LIMIT;
     try {
+      const beforeInMicroseconds = before * 1000;
       const reply = await firstValueFrom(
-        this.chatService.getMessages({ roomId, limit, before }),
+        this.chatService.getMessages({ roomId, limit, before: beforeInMicroseconds }),
       );
       const rawMessages = reply?.messages ?? [];
       const hasMore = rawMessages.length >= limit;
