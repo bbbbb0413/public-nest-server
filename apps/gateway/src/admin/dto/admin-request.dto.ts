@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString } from 'class-validator';
+import { IsEmail, IsOptional, IsString } from 'class-validator';
 
 export class AdminSignupInDto {
   @ApiProperty()
@@ -25,6 +25,16 @@ export class AdminLoginInDto {
   password: string;
 }
 
+export class ChangeAdminPasswordInDto {
+  @ApiProperty({ description: '관리자 이메일' })
+  @IsEmail()
+  email: string;
+
+  @ApiProperty({ description: '새 비밀번호' })
+  @IsString()
+  password: string;
+}
+
 export class UpdateActivateUserInDto {
   @ApiProperty()
   userId: number;
@@ -36,4 +46,9 @@ export class UpdateActivateUserInDto {
 export class UpdateRoleUserInDto {
   @ApiProperty()
   userId: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  role?: string;
 }

@@ -24,6 +24,7 @@ import { GatewayAuthGuard } from '../auth/gateway-auth.guard';
 import {
   AdminLoginInDto,
   AdminSignupInDto,
+  ChangeAdminPasswordInDto,
   UpdateActivateUserInDto,
   UpdateRoleUserInDto,
 } from './dto/admin-request.dto';
@@ -140,12 +141,12 @@ export class AdminGatewayController implements OnModuleInit {
   @Post('user/change/password')
   @ApiResponseEntity({ summary: '어드민 비밀번호 변경' })
   async changePassword(
-    @Body() dto: AdminSignupInDto,
+    @Body() dto: ChangeAdminPasswordInDto,
     @Req() req: any,
   ): Promise<ResponseEntity<unknown>> {
     await firstValueFrom(
       this.adminService.changeAdminPassword({
-        name: dto.name,
+        name: dto.email,
         email: dto.email,
         password: dto.password,
         executorEmail: req.user?.email,
