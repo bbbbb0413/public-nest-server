@@ -1,11 +1,11 @@
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { of, throwError } from 'rxjs';
-import { validate } from 'class-validator';
-import { plainToInstance } from 'class-transformer';
 import { Order } from '@libs/common/pagination/dto/page-options.dto';
 import { AdminGatewayController } from './admin-gateway.controller';
 import {
   ChangeAdminPasswordInDto,
+  UpdateActivateUserInDto,
   UpdateRoleUserInDto,
 } from './dto/admin-request.dto';
 
@@ -43,100 +43,199 @@ describe('AdminGatewayController', () => {
     controller.onModuleInit();
   });
 
-  describe('DTO 검증', () => {
+  describe('DTO 검증 (ValidationPipe)', () => {
+    const pipe = new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    });
+
     describe('ChangeAdminPasswordInDto', () => {
       it('email과 password가 올바르게 주어지면(name 없이도) 유효성 검증을 통과해야 한다', async () => {
         const plain = {
           email: 'admin@example.com',
           password: 'Password123!',
         };
-        const dto = plainToInstance(ChangeAdminPasswordInDto, plain);
-        const errors = await validate(dto as object);
-        expect(errors.length).toBe(0);
+        const transformed = await pipe.transform(plain, {
+          type: 'body',
+          metatype: ChangeAdminPasswordInDto,
+        });
+        expect(transformed).toBeInstanceOf(ChangeAdminPasswordInDto);
+        expect(transformed.email).toBe('admin@example.com');
+        expect(transformed.password).toBe('Password123!');
       });
 
-      it('email이 유효하지 않은 형식이면 유효성 검증에 실패해야 한다', async () => {
+      it('email이 유효하지 않은 형식이면 유효성 검증에 실패(400)해야 한다', async () => {
         const plain = {
           email: 'not-an-email',
           password: 'Password123!',
         };
-        const dto = plainToInstance(ChangeAdminPasswordInDto, plain);
-        const errors = await validate(dto as object);
-        expect(errors.length).toBeGreaterThan(0);
-        expect(errors.some((e) => e.property === 'email')).toBe(true);
+        await expect(
+          pipe.transform(plain, {
+            type: 'body',
+            metatype: ChangeAdminPasswordInDto,
+          }),
+        ).rejects.toThrow(BadRequestException);
       });
 
-      it('password가 누락되면 유효성 검증에 실패해야 한다', async () => {
+      it('password가 누락되면 유효성 검증에 실패(400)해야 한다', async () => {
         const plain = {
           email: 'admin@example.com',
         };
-        const dto = plainToInstance(ChangeAdminPasswordInDto, plain);
-        const errors = await validate(dto as object);
-        expect(errors.length).toBeGreaterThan(0);
-        expect(errors.some((e) => e.property === 'password')).toBe(true);
+        await expect(
+          pipe.transform(plain, {
+            type: 'body',
+            metatype: ChangeAdminPasswordInDto,
+          }),
+        ).rejects.toThrow(BadRequestException);
       });
 
-      it('email이 누락되면 유효성 검증에 실패해야 한다', async () => {
+      it('email이 누락되면 유효성 검증에 실패(400)해야 한다', async () => {
         const plain = {
           password: 'Password123!',
         };
-        const dto = plainToInstance(ChangeAdminPasswordInDto, plain);
-        const errors = await validate(dto as object);
-        expect(errors.length).toBeGreaterThan(0);
-        expect(errors.some((e) => e.property === 'email')).toBe(true);
+        await expect(
+          pipe.transform(plain, {
+            type: 'body',
+            metatype: ChangeAdminPasswordInDto,
+          }),
+        ).rejects.toThrow(BadRequestException);
       });
 
-      it('password가 문자열이 아닌 경우 유효성 검증에 실패해야 한다', async () => {
+      it('whitelist에 없는 프로퍼티가 포함되면 유효성 검증에 실패(400)해야 한다', async () => {
         const plain = {
           email: 'admin@example.com',
-          password: 12345678,
+          password: 'Password123!',
+          extra: 'not-allowed',
         };
-        const dto = plainToInstance(ChangeAdminPasswordInDto, plain);
-        const errors = await validate(dto as object);
-        expect(errors.length).toBeGreaterThan(0);
-        expect(errors.some((e) => e.property === 'password')).toBe(true);
+        await expect(
+          pipe.transform(plain, {
+            type: 'body',
+            metatype: ChangeAdminPasswordInDto,
+          }),
+        ).rejects.toThrow(BadRequestException);
       });
     });
 
     describe('UpdateRoleUserInDto', () => {
-      it('userId만 주어지고 role이 없어도 유효성 검증을 통과해야 한다', async () => {
+      it('userId만 주어지고 role이 없어도 whitelist 유효성 검증을 통과해야 한다', async () => {
         const plain = {
           userId: 1,
         };
-        const dto = plainToInstance(UpdateRoleUserInDto, plain);
-        const errors = await validate(dto as object);
-        expect(errors.length).toBe(0);
+        const transformed = await pipe.transform(plain, {
+          type: 'body',
+          metatype: UpdateRoleUserInDto,
+        });
+        expect(transformed).toBeInstanceOf(UpdateRoleUserInDto);
+        expect(transformed.userId).toBe(1);
+        expect(transformed.role).toBeUndefined();
       });
 
-      it('userId와 유효한 role 문자열이 주어지면 유효성 검증을 통과해야 한다', async () => {
+      it('userId와 유효한 role 문자열이 주어지면 whitelist 유효성 검증을 통과하고 필드가 유지되어야 한다', async () => {
         const plain = {
           userId: 1,
+          role: 'moderator',
+        };
+        const transformed = await pipe.transform(plain, {
+          type: 'body',
+          metatype: UpdateRoleUserInDto,
+        });
+        expect(transformed).toBeInstanceOf(UpdateRoleUserInDto);
+        expect(transformed.userId).toBe(1);
+        expect(transformed.role).toBe('moderator');
+      });
+
+      it('userId가 문자열 형태 숫자여도 @Type 변환을 통해 숫자로 변환되어 통과해야 한다', async () => {
+        const plain = {
+          userId: '1',
           role: 'admin',
         };
-        const dto = plainToInstance(UpdateRoleUserInDto, plain);
-        const errors = await validate(dto as object);
-        expect(errors.length).toBe(0);
+        const transformed = await pipe.transform(plain, {
+          type: 'body',
+          metatype: UpdateRoleUserInDto,
+        });
+        expect(transformed.userId).toBe(1);
+        expect(transformed.role).toBe('admin');
       });
 
-      it('role이 빈 문자열("")이어도 문자열이므로 통과해야 한다', async () => {
+      it('userId가 숫자가 아닌 경우 유효성 검증에 실패(400)해야 한다', async () => {
         const plain = {
-          userId: 1,
-          role: '',
+          userId: 'invalid-id',
+          role: 'admin',
         };
-        const dto = plainToInstance(UpdateRoleUserInDto, plain);
-        const errors = await validate(dto as object);
-        expect(errors.length).toBe(0);
+        await expect(
+          pipe.transform(plain, {
+            type: 'body',
+            metatype: UpdateRoleUserInDto,
+          }),
+        ).rejects.toThrow(BadRequestException);
       });
 
-      it('role이 문자열이 아닌 경우 유효성 검증에 실패해야 한다', async () => {
+      it('role이 문자열이 아닌 경우 유효성 검증에 실패(400)해야 한다', async () => {
         const plain = {
           userId: 1,
           role: 12345,
         };
-        const dto = plainToInstance(UpdateRoleUserInDto, plain);
-        const errors = await validate(dto as object);
-        expect(errors.length).toBeGreaterThan(0);
-        expect(errors.some((e) => e.property === 'role')).toBe(true);
+        await expect(
+          pipe.transform(plain, {
+            type: 'body',
+            metatype: UpdateRoleUserInDto,
+          }),
+        ).rejects.toThrow(BadRequestException);
+      });
+
+      it('whitelist에 없는 프로퍼티가 전달되면 400 에러를 던져야 한다', async () => {
+        const plain = {
+          userId: 1,
+          role: 'admin',
+          unexpected: 'value',
+        };
+        await expect(
+          pipe.transform(plain, {
+            type: 'body',
+            metatype: UpdateRoleUserInDto,
+          }),
+        ).rejects.toThrow(BadRequestException);
+      });
+    });
+
+    describe('UpdateActivateUserInDto', () => {
+      it('userId와 activate가 주어지면 whitelist 유효성 검증을 통과해야 한다', async () => {
+        const plain = {
+          userId: 1,
+          activate: true,
+        };
+        const transformed = await pipe.transform(plain, {
+          type: 'body',
+          metatype: UpdateActivateUserInDto,
+        });
+        expect(transformed).toBeInstanceOf(UpdateActivateUserInDto);
+        expect(transformed.userId).toBe(1);
+        expect(transformed.activate).toBe(true);
+      });
+
+      it('userId가 누락되면 유효성 검증에 실패(400)해야 한다', async () => {
+        const plain = {
+          activate: true,
+        };
+        await expect(
+          pipe.transform(plain, {
+            type: 'body',
+            metatype: UpdateActivateUserInDto,
+          }),
+        ).rejects.toThrow(BadRequestException);
+      });
+
+      it('activate가 누락되면 유효성 검증에 실패(400)해야 한다', async () => {
+        const plain = {
+          userId: 1,
+        };
+        await expect(
+          pipe.transform(plain, {
+            type: 'body',
+            metatype: UpdateActivateUserInDto,
+          }),
+        ).rejects.toThrow(BadRequestException);
       });
     });
   });

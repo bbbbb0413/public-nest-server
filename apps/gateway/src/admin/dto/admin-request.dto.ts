@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsBoolean, IsEmail, IsInt, IsOptional, IsString } from 'class-validator';
 
 export class AdminSignupInDto {
   @ApiProperty()
@@ -37,14 +38,19 @@ export class ChangeAdminPasswordInDto {
 
 export class UpdateActivateUserInDto {
   @ApiProperty()
+  @Type(() => Number)
+  @IsInt()
   userId: number;
 
   @ApiProperty()
+  @IsBoolean()
   activate: boolean;
 }
 
 export class UpdateRoleUserInDto {
   @ApiProperty()
+  @Type(() => Number)
+  @IsInt()
   userId: number;
 
   @ApiProperty({ required: false })
