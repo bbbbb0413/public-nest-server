@@ -133,7 +133,10 @@ export class UserService {
   }
 
   updateRole(_updateRoleUserDto: UpdateRoleUserDto): never {
-    throw new ServerErrorException(INTERNAL_ERROR_CODE.ERROR);
+    throw new ServerErrorException(
+      INTERNAL_ERROR_CODE.ERROR,
+      '현재 사용자 권한 변경 기능은 지원되지 않습니다.',
+    );
   }
 
   async findAll(

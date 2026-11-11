@@ -5,6 +5,7 @@ import { createUsersDomainRepositoryMock } from '../../../../test-support/mocks/
 import { createBullQueueMock } from '../../../../test-support/mocks/bull-queue.mock';
 import { getQueueToken } from '@nestjs/bull';
 import { ServerErrorException } from '@libs/common/exception/server-error.exception';
+import { INTERNAL_ERROR_CODE } from '@libs/common/constants/internal-error-code.constants';
 import { createUserDomainFixture } from '../../../../test-support/fixtures/user-domain.fixture';
 import {
   PageOptionsDto,
@@ -94,14 +95,19 @@ describe('UserService', () => {
   });
 
   describe('changePassword', () => {
-    it('비밀번호 복잡도 미달 시 ServerErrorException을 던진다', async () => {
+    it('비밀번호 복잡도 미달 시 구체적인 복잡도 안내 메시지를 포함한 ServerErrorException을 던진다', async () => {
       usersRepository.findByEmail.mockResolvedValue(createUserDomainFixture());
       await expect(
         service.changePassword(
           { email: 't@e.com', password: 'pw', name: 'n' },
           't@e.com',
         ),
-      ).rejects.toThrow(ServerErrorException);
+      ).rejects.toThrow(
+        new ServerErrorException(
+          INTERNAL_ERROR_CODE.ERROR,
+          '비밀번호는 10~30자이며 소문자/대문자/숫자/특수문자 중 4가지를 포함해야 합니다.',
+        ),
+      );
     });
 
     it('다른 사용자 비밀번호 변경 시 ServerErrorException을 던진다', async () => {
@@ -195,9 +201,12 @@ describe('UserService', () => {
   });
 
   describe('updateRole', () => {
-    it('미구현 상태이므로 항상 ServerErrorException을 던진다', () => {
+    it('지원되지 않는 권한 변경 요청에 대해 명확한 비즈니스 에러 메시지를 포함한 ServerErrorException을 던진다', () => {
       expect(() => service.updateRole({ userId: 1 })).toThrow(
-        ServerErrorException,
+        new ServerErrorException(
+          INTERNAL_ERROR_CODE.ERROR,
+          '현재 사용자 권한 변경 기능은 지원되지 않습니다.',
+        ),
       );
     });
   });
