@@ -122,12 +122,37 @@ describe('RagSessionProxyController', () => {
   });
 
   it('특정 세션의 답변 북마크 목록 조회(GET /ai/rag/bookmarks/session/:sessionId)를 지원한다', async () => {
-    await request(app.getHttpServer()).get('/ai/rag/bookmarks/session/sess-1');
+    const mockBookmarks = [
+      { id: 'bm-1', sessionId: 'sess-1', turnIndex: 0, title: '질문 1', content: '답변 1', note: '메모 1' },
+      { id: 'bm-2', sessionId: 'sess-1', turnIndex: 2, title: '질문 2', content: '답변 2', note: null },
+    ];
+    mockAiServicePy.get.mockResolvedValueOnce(mockBookmarks);
+
+    const res = await request(app.getHttpServer()).get('/ai/rag/bookmarks/session/sess-1');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(mockBookmarks);
+    expect(mockAiServicePy.get).toHaveBeenCalledWith({
+      method: 'rag/bookmarks/session/sess-1',
+      params: { userId: SESSION_UUID },
+    });
+  });
+
+  it('세션별 북마크 조회 시 클라이언트가 보낸 userId 쿼리는 무시하고 세션의 uuid만 사용한다', async () => {
+    await request(app.getHttpServer()).get('/ai/rag/bookmarks/session/sess-1?userId=침입자');
 
     expect(mockAiServicePy.get).toHaveBeenCalledWith({
       method: 'rag/bookmarks/session/sess-1',
       params: { userId: SESSION_UUID },
     });
+  });
+
+  it('세션별 북마크 조회 시 ai-service-py에서 예외가 발생하면 에러를 전파한다', async () => {
+    mockAiServicePy.get.mockRejectedValueOnce(new Error('ai-service-py failure'));
+
+    const res = await request(app.getHttpServer()).get('/ai/rag/bookmarks/session/sess-1');
+
+    expect(res.status).toBe(500);
   });
 
   it('답변/세션 북마크 등록(POST /ai/rag/bookmarks)을 지원한다', async () => {
