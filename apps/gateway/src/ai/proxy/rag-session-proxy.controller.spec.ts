@@ -121,6 +121,15 @@ describe('RagSessionProxyController', () => {
     });
   });
 
+  it('특정 세션의 답변 북마크 목록 조회(GET /ai/rag/bookmarks/session/:sessionId)를 지원한다', async () => {
+    await request(app.getHttpServer()).get('/ai/rag/bookmarks/session/sess-1');
+
+    expect(mockAiServicePy.get).toHaveBeenCalledWith({
+      method: 'rag/bookmarks/session/sess-1',
+      params: { userId: SESSION_UUID },
+    });
+  });
+
   it('답변/세션 북마크 등록(POST /ai/rag/bookmarks)을 지원한다', async () => {
     const payload = { sessionId: 'sess-1', turnIndex: 0, note: '중요한 답변' };
     await request(app.getHttpServer()).post('/ai/rag/bookmarks').send(payload);

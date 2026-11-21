@@ -142,6 +142,18 @@ export class RagSessionProxyController {
     });
   }
 
+  @Get('bookmarks/session/:sessionId')
+  @ApiOperation({ summary: '특정 세션의 답변 북마크 목록 조회 (ai-service-py 프록시)' })
+  async getSessionBookmarks(
+    @Req() req: AuthenticatedRequest,
+    @Param('sessionId') sessionId: string,
+  ): Promise<unknown> {
+    return this.aiServicePy.get({
+      method: `rag/bookmarks/session/${sessionId}`,
+      params: { userId: req.session.uuid },
+    });
+  }
+
   @Post('bookmarks')
   @ApiOperation({ summary: '답변 또는 세션 보관(북마크) 등록 (ai-service-py 프록시)' })
   async createBookmark(
